@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOE Mitsubishi — Build Dashboard</title>
+<style>
+  :root{
+    --red:#E60012; --red-d:#A8000D; --red-bg:#FDECEE;
+    --ink:#1A1D21; --ink-2:#5A6068; --ink-3:#8A9099;
+    --line:#DFE3E8; --line-2:#EDEFF2; --bg:#F4F6F8;
+    --green:#12864B; --green-bg:#E7F5EC; --blue:#1E5AC8; --blue-bg:#E9F0FC;
+    --amber:#B0740A; --amber-bg:#FDF3E2;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:Roboto,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13px;}
+
+  /* ---------- top bar ---------- */
+  .topbar{background:#fff;border-bottom:3px solid var(--red);padding:12px 22px;
+          display:flex;align-items:center;gap:12px;}
+  .topbar svg{width:26px;height:26px;flex:0 0 26px;}
+  .brand-name{font-size:14px;font-weight:700;letter-spacing:.1em;}
+  .brand-sub{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);}
+
+  .wrap{max-width:860px;margin:0 auto;padding:26px 22px 60px;}
+  h1{font-size:21px;font-weight:700;margin:0 0 5px;letter-spacing:-.01em;}
+  .lede{color:var(--ink-2);margin:0 0 22px;line-height:1.6;}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:5px;margin-bottom:14px;}
+  .card-hd{padding:11px 16px;border-bottom:1px solid var(--line-2);display:flex;
+           align-items:center;justify-content:space-between;gap:10px;}
+  .card-hd h2{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+              margin:0;display:flex;align-items:center;gap:8px;}
+  .card-hd h2::before{content:"";width:3px;height:13px;background:var(--red);border-radius:1px;}
+  .card-bd{padding:16px;}
+
+  /* ---------- drop zone ---------- */
+  .drop{border:2px dashed #C6CDD5;border-radius:5px;background:#FAFBFC;padding:30px 20px;
+        text-align:center;cursor:pointer;transition:.15s;}
+  .drop:hover{border-color:var(--ink-3);background:#F6F8FA;}
+  .drop.over{border-color:var(--red);background:var(--red-bg);}
+  .drop .big{font-size:15px;font-weight:600;margin-bottom:4px;}
+  .drop .small{color:var(--ink-3);font-size:11.5px;}
+  input[type=file]{display:none;}
+
+  /* ---------- file slots ---------- */
+  .slot{display:flex;align-items:center;gap:11px;padding:9px 2px;border-top:1px solid var(--line-2);}
+  .slot:first-child{border-top:0;}
+  .dot{width:18px;height:18px;border-radius:50%;flex:0 0 18px;display:flex;align-items:center;
+       justify-content:center;font-size:11px;font-weight:700;background:#EEF0F3;color:var(--ink-3);}
+  .slot.ready .dot{background:var(--green-bg);color:var(--green);}
+  .slot .nm{font-weight:600;}
+  .slot .meta{color:var(--ink-3);font-size:11.5px;margin-left:auto;text-align:right;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%;}
+  .dl{display:flex;align-items:center;gap:11px;padding:10px 2px;border-top:1px solid var(--line-2);}
+  .dl .xl{width:26px;height:22px;flex:0 0 26px;border-radius:3px;background:var(--green-bg);
+          color:var(--green);font-size:8.5px;font-weight:700;display:flex;align-items:center;
+          justify-content:center;letter-spacing:.04em;}
+  .dl .nm{font-weight:600;}
+  .dl .what{color:var(--ink-3);font-size:11.5px;}
+  .dl a{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--blue);text-decoration:none;
+        white-space:nowrap;}
+  .dl a:hover{text-decoration:underline;}
+
+  /* ---------- buttons ---------- */
+  .btn{appearance:none;border:0;border-radius:4px;padding:10px 20px;font-size:13px;font-weight:600;
+       font-family:inherit;cursor:pointer;background:var(--ink);color:#fff;transition:.15s;}
+  .btn:hover:not(:disabled){background:#000;}
+  .btn:disabled{background:#D5DAE0;color:#fff;cursor:not-allowed;}
+  .btn-red{background:var(--red);} .btn-red:hover:not(:disabled){background:var(--red-d);}
+  .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line);}
+  .btn-ghost:hover:not(:disabled){background:#F4F6F8;}
+  .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;}
+
+  /* ---------- steps ---------- */
+  .steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;}
+  .step{border:1px solid var(--line);border-radius:4px;padding:10px 11px;background:#FAFBFC;}
+  .step .k{font-size:9.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+           color:var(--ink-3);margin-bottom:3px;}
+  .step .v{font-size:12px;font-weight:600;color:var(--ink-3);}
+  .step.active{border-color:var(--blue);background:var(--blue-bg);}
+  .step.active .v{color:var(--blue);}
+  .step.done{border-color:#BFE3CD;background:var(--green-bg);}
+  .step.done .v{color:var(--green);}
+  .step.skip{border-color:#F0DFBB;background:var(--amber-bg);}
+  .step.skip .v{color:var(--amber);}
+  .step.bad{border-color:#F3C9CE;background:var(--red-bg);}
+  .step.bad .v{color:var(--red-d);}
+
+  pre.log{background:#1A1D21;color:#D7DCE2;border-radius:4px;padding:12px 14px;margin:13px 0 0;
+          font-family:"Roboto Mono",Consolas,monospace;font-size:11px;line-height:1.55;
+          max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-word;}
+
+  .note{background:var(--blue-bg);border:1px solid #D0DCEE;border-left:3px solid var(--blue);
+        border-radius:4px;padding:11px 13px;color:var(--ink);line-height:1.6;}
+  .note.good{background:var(--green-bg);border-color:#BFE3CD;border-left-color:var(--green);}
+  .note.bad{background:var(--red-bg);border-color:#F3C9CE;border-left-color:var(--red);}
+  .stat{display:flex;gap:22px;flex-wrap:wrap;margin-top:11px;}
+  .stat div{font-size:11.5px;color:var(--ink-3);}
+  .stat b{display:block;font-size:17px;font-weight:700;color:var(--ink);letter-spacing:-.01em;}
+  .hide{display:none;}
+  @media (max-width:640px){ .steps{grid-template-columns:repeat(2,minmax(0,1fr));} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <svg viewBox="0 0 100 97" xmlns="http://www.w3.org/2000/svg" aria-label="SOE Mitsubishi">
+    <g fill="#E60012">
+      <polygon points="50,3 67,32 50,61 33,32"/>
+      <polygon points="32,35 49,64 32,93 15,64"/>
+      <polygon points="68,35 85,64 68,93 51,64"/>
+    </g>
+  </svg>
+  <div>
+    <div class="brand-name">SOE MITSUBISHI</div>
+    <div class="brand-sub">Business Intelligence</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Build the dashboard</h1>
+  <p class="lede">Drop the three Excel exports below and press Build. Cleaning, forecasting and the
+  dashboard itself all run on this computer — nothing is uploaded anywhere.</p>
+
+  <!-- an earlier build is already on disk -->
+  <div class="card hide" id="existingCard">
+    <div class="card-hd"><h2>Ready to view</h2></div>
+    <div class="card-bd">
+      <div class="note good" id="existingNote"></div>
+      <div class="row" style="margin-top:13px;">
+        <button class="btn btn-red" onclick="location.href='dashboard.html'">Open dashboard</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('existingCard').classList.add('hide')">
+          Upload new data instead</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- step 1: the files -->
+  <div class="card" id="uploadCard">
+    <div class="card-hd"><h2>1 · Raw data</h2><span class="brand-sub" id="slotCount">0 of 3</span></div>
+    <div class="card-bd">
+      <div class="drop" id="drop">
+        <div class="big">Drop the Excel files here</div>
+        <div class="small">or click to choose — Sale Order History · Item · Customer (.xlsx)</div>
+      </div>
+      <input type="file" id="picker" multiple accept=".xlsx,.xls,.xlsm">
+      <div style="margin-top:14px;">
+        <div class="slot" data-kind="sales"><span class="dot">1</span>
+          <span class="nm">Sale Order History</span><span class="meta">waiting</span></div>
+        <div class="slot" data-kind="item"><span class="dot">2</span>
+          <span class="nm">Item master</span><span class="meta">waiting</span></div>
+        <div class="slot" data-kind="customer"><span class="dot">3</span>
+          <span class="nm">Customer master</span><span class="meta">waiting</span></div>
+      </div>
+      <div class="row" style="margin-top:16px;">
+        <button class="btn btn-red" id="runBtn" disabled>Build dashboard</button>
+        <span class="small" style="color:var(--ink-3);" id="hint">Add all three files to start.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- step 2: progress -->
+  <div class="card hide" id="runCard">
+    <div class="card-hd"><h2>2 · Building</h2><span class="brand-sub" id="clock">0s</span></div>
+    <div class="card-bd">
+      <div class="steps">
+        <div class="step" id="st0"><div class="k">Step 1</div><div class="v">Upload</div></div>
+        <div class="step" id="st1"><div class="k">Step 2</div><div class="v">Clean</div></div>
+        <div class="step" id="st2"><div class="k">Step 3</div><div class="v">Forecast</div></div>
+        <div class="step" id="st3"><div class="k">Step 4</div><div class="v">Dashboard</div></div>
+      </div>
+      <pre class="log" id="log"></pre>
+    </div>
+  </div>
+
+  <!-- step 3: result -->
+  <div class="card hide" id="doneCard">
+    <div class="card-hd"><h2>3 · Done</h2></div>
+    <div class="card-bd">
+      <div class="note good" id="doneNote"></div>
+      <div class="stat" id="doneStat"></div>
+      <div class="row" style="margin-top:16px;">
+        <button class="btn btn-red" onclick="location.href='dashboard.html'">Open dashboard</button>
+        <button class="btn btn-ghost" onclick="location.reload()">Build again</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hide" id="filesCard">
+    <div class="card-hd"><h2>Take away</h2><span class="brand-sub">Excel</span></div>
+    <div class="card-bd">
+      <p class="lede" style="margin:0 0 4px;">Everything the dashboard knows, as workbooks you can
+      send to someone who will never open the dashboard.</p>
+      <div id="fileList"></div>
+    </div>
+  </div>
+
+  <div class="card hide" id="errCard">
+    <div class="card-hd"><h2>Something went wrong</h2></div>
+    <div class="card-bd"><div class="note bad" id="errNote"></div></div>
+  </div>
+</div>
+
+<script>
+const files = {};                       // kind -> {name, size}
+const $ = id => document.getElementById(id);
+
+// ---------- which of the three a dropped file is, by name ----------
+function classify(name){
+  const n = name.toLowerCase();
+  if (!/\.xls[xm]?$/.test(n) || n.includes('cleaned') || n.startsWith('~$')) return null;
+  if (n.includes('customer')) return 'customer';
+  if (n.includes('item')) return 'item';
+  if (n.includes('sale') || n.includes('order')) return 'sales';
+  return null;
+}
+
+function paintSlots(){
+  let n = 0;
+  document.querySelectorAll('.slot').forEach(s => {
+    const f = files[s.dataset.kind];
+    s.classList.toggle('ready', !!f);
+    s.querySelector('.dot').textContent = f ? '✓' : s.dataset.kind === 'sales' ? '1' : s.dataset.kind === 'item' ? '2' : '3';
+    s.querySelector('.meta').textContent = f ? `${f.name} · ${(f.size/1048576).toFixed(1)} MB` : 'waiting';
+    if (f) n++;
+  });
+  $('slotCount').textContent = n + ' of 3';
+  $('runBtn').disabled = n < 3;
+  $('hint').textContent = n < 3 ? 'Add all three files to start.' : 'Ready when you are.';
+}
+
+async function accept(list){
+  for (const f of list){
+    const kind = classify(f.name);
+    if (!kind){ $('hint').textContent = `"${f.name}" does not look like one of the three exports — skipped.`; continue; }
+    files[kind] = {name: f.name, size: f.size, blob: f};
+  }
+  paintSlots();
+}
+
+// ---------- drag and drop ----------
+const drop = $('drop');
+drop.addEventListener('click', () => $('picker').click());
+$('picker').addEventListener('change', e => accept(e.target.files));
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => {
+  e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => {
+  e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => accept(e.dataTransfer.files));
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => e.preventDefault());
+
+// ---------- run ----------
+let t0 = 0, timer = null;
+function setStep(i, cls){ $('st' + i).className = 'step' + (cls ? ' ' + cls : ''); }
+
+$('runBtn').addEventListener('click', async () => {
+  $('uploadCard').classList.add('hide');
+  $('existingCard').classList.add('hide');
+  $('runCard').classList.remove('hide');
+  t0 = Date.now();
+  timer = setInterval(() => $('clock').textContent = Math.round((Date.now() - t0)/1000) + 's', 500);
+
+  setStep(0, 'active');
+  for (const kind of ['sales','item','customer']){
+    const f = files[kind];
+    await fetch('/upload?kind=' + kind + '&name=' + encodeURIComponent(f.name),
+                {method:'POST', body:f.blob});
+  }
+  setStep(0, 'done');
+  await fetch('/run', {method:'POST'});
+  poll();
+});
+
+async function poll(){
+  const s = await (await fetch('/status')).json();
+  $('log').textContent = s.lines.join('\n');
+  $('log').scrollTop = $('log').scrollHeight;
+  for (let i = 1; i <= 3; i++)
+    setStep(i, s.stage > i ? 'done' : s.stage === i ? 'active' : '');
+  if (s.reusing_forecast) setStep(2, 'skip');
+
+  if (s.done){
+    clearInterval(timer);
+    if (s.error){                       // leave the step that failed marked red
+      setStep(Math.min(s.stage, 3), 'bad');
+      $('errCard').classList.remove('hide');
+      $('errNote').textContent = s.error;
+      return;
+    }
+    [1,2,3].forEach(i => { if (!$('st'+i).classList.contains('skip')) setStep(i, 'done'); });
+    finish(s.summary);
+    showFiles(s.files);
+    return;
+  }
+  setTimeout(poll, 700);
+}
+
+function showFiles(files){
+  if (!files || !files.length) return;
+  $('filesCard').classList.remove('hide');
+  $('fileList').innerHTML = files.map(f =>
+    `<div class="dl"><span class="xl">XLSX</span>` +
+    `<span><span class="nm">${f.name}</span><br><span class="what">${f.what}</span></span>` +
+    `<a href="/download?f=${encodeURIComponent(f.name)}">Download · ${f.kb.toLocaleString()} KB</a></div>`
+  ).join('');
+}
+
+function finish(sum){
+  $('doneCard').classList.remove('hide');
+  const n = v => (v ?? 0).toLocaleString();
+  $('doneNote').innerHTML = sum.reused === 'everything'
+    ? '<b>This data is identical to the last run</b> — nothing needed recomputing, the dashboard and the exports below are ready.'
+    : sum.reused
+      ? `<b>Built in ${sum.elapsed}s.</b> The sales file had not changed, so ${sum.reused} was reused.`
+      : `<b>Built in ${sum.elapsed}s</b> — everything was recomputed from scratch.`;
+  $('doneStat').innerHTML =
+    `<div><b>${n(sum.order_lines)}</b>order lines</div>` +
+    `<div><b>${n(sum.skus)}</b>SKUs</div>` +
+    `<div><b>${n(sum.customers)}</b>customers</div>` +
+    `<div><b>${n(sum.reorders)}</b>reorder pairs</div>` +
+    `<div><b>${n(sum.mismatches)}</b>mismatches</div>`;
+  setTimeout(() => window.open('dashboard.html', '_blank'), 1200);
+}
+
+// ---------- on load: is there already a dashboard? ----------
+(async () => {
+  const s = await (await fetch('/status')).json();
+  paintSlots();
+  if (s.running){ $('uploadCard').classList.add('hide'); $('runCard').classList.remove('hide');
+                  t0 = Date.now(); poll(); return; }
+  if (s.has_dashboard){
+    $('existingCard').classList.remove('hide');
+    $('existingNote').innerHTML = `A dashboard built <b>${s.built_at || 'earlier'}</b> is already here. ` +
+      `Open it, or drop a newer set of files below to rebuild.`;
+    showFiles(s.files);
+  }
+})();
+</script>
+</body>
+</html>

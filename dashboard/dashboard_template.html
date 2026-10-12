@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOE Mitsubishi - Business Performance &amp; Inventory Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+<style>
+  :root{
+    --red:#E60012;
+    --red-d:#A8000D;
+    --red-bg:#FDECEE;
+    --ink:#1A1D21;
+    --ink-2:#5A6068;
+    --ink-3:#8B929B;
+    --line:#DFE3E8;
+    --line-2:#EDEFF2;
+    --bg:#F1F3F5;
+    --card:#FFFFFF;
+    --green:#12864B;
+    --green-bg:#E7F5EC;
+    --amber:#B0740A;
+    --amber-bg:#FDF3E2;
+    --blue:#1E5AC8;
+    --blue-bg:#E9F0FC;
+    --purple:#5B4BC4;
+    --purple-bg:#EEEAFB;
+    --teal:#0E8074;
+    --teal-bg:#E2F5F3;
+    --orange:#C2540C;
+    --orange-bg:#FDEBDF;
+    --gray:#5A6068;
+    --gray-bg:#EEF0F2;
+    --dark:#22262B;
+    /* legacy aliases kept so existing render code keeps working */
+    --ink-2-legacy:#5A6068;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Roboto','Helvetica Neue',Arial,sans-serif;
+    font-size:13px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono,code{font-family:'Roboto Mono',ui-monospace,monospace;}
+
+  /* ============ TOP BAR ============ */
+  .topbar{
+    background:#fff;
+    border-bottom:3px solid var(--red);
+    display:flex;align-items:center;gap:20px;
+    padding:9px 22px;
+    position:sticky;top:0;z-index:60;
+    box-shadow:0 1px 4px rgba(0,0,0,.07);
+  }
+  .brand{display:flex;align-items:center;gap:11px;flex-shrink:0;}
+  .brand svg{width:32px;height:30px;display:block;}
+  .brand-name{font-size:13px;font-weight:700;letter-spacing:.09em;line-height:1.2;}
+  .brand-sub{font-size:9.5px;color:var(--ink-3);letter-spacing:.08em;text-transform:uppercase;}
+  .topbar h1{
+    flex:1;text-align:center;margin:0;
+    font-size:14.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  }
+  .topbar-meta{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+  .meta-txt{font-size:11px;color:var(--ink-3);text-align:right;line-height:1.3;}
+  .meta-txt b{color:var(--ink-2);font-weight:500;}
+  .pill-live{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--green-bg);color:var(--green);
+    font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    padding:5px 10px;border-radius:3px;white-space:nowrap;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;}
+
+  /* ============ LAYOUT ============ */
+  .page{max-width:1600px;margin:0 auto;padding:16px 20px 26px;overflow-x:hidden;}
+  .grid{display:grid;gap:14px;margin-bottom:14px;}
+  .grid > *{min-width:0;}
+  .g-kpi{grid-template-columns:repeat(5,minmax(0,1fr));}
+  .g-2-1{grid-template-columns:minmax(0,2.15fr) minmax(0,1fr);}
+  .g-1-1p4{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);}
+  .stack-col{display:flex;flex-direction:column;justify-content:space-between;gap:14px;min-width:0;}
+  .stack-col > .card{display:flex;flex-direction:column;min-width:0;}
+  .g-3{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .g-2{grid-template-columns:repeat(2,minmax(0,1fr));}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:4px;overflow:hidden;}
+  .card-hd{
+    padding:11px 15px;border-bottom:1px solid var(--line-2);
+    display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  }
+  .card-hd h2{
+    margin:0;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink);
+    display:flex;align-items:center;gap:7px;
+  }
+  .card-hd .sub{margin:3px 0 0;font-size:11.5px;color:var(--ink-2);}
+  .card-hd .sub b{color:var(--ink);font-weight:500;}
+  .card-bd{padding:14px 15px;}
+  .grid > .card{display:flex;flex-direction:column;}
+  .card-bd.fill{flex:1 1 auto;display:flex;}
+  .card-bd.fill > .chart-wrap{flex:1 1 auto;}
+  .card-bd.tight{padding:10px 15px;}
+  .card-bd.flush{padding:0;}
+  .accent{width:3px;height:13px;background:var(--red);border-radius:2px;display:inline-block;}
+
+  /* ============ KPI CARDS ============ */
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:4px;padding:13px 15px 12px;min-width:0;overflow:hidden;}
+  .kpi-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-width:0;}
+  .kpi-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);min-width:0;}
+  .spark{width:64px !important;height:24px !important;max-width:64px;display:block;flex:0 0 64px;}
+  .kpi-value{font-size:27px;font-weight:700;letter-spacing:-.02em;margin:9px 0 0;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .kpi-value small{font-size:12.5px;font-weight:400;color:var(--ink-3);margin-left:5px;letter-spacing:0;}
+  .kpi-bar{height:6px;border-radius:2px;background:#E7EAEE;overflow:hidden;margin:11px 0 8px;}
+  .kpi-bar i{display:block;height:100%;border-radius:2px;background:var(--red);transition:width .4s ease;}
+  .kpi-desc{font-size:10.5px;line-height:1.42;color:var(--ink-3);margin:0 0 9px;min-height:30px;}
+  .kpi-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--ink-2);}
+  .kpi-foot > span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .tag{
+    display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+    font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    padding:3px 8px;border-radius:3px;flex-shrink:0;
+  }
+  .tag-ok{background:var(--green-bg);color:var(--green);}
+  .tag-warn{background:var(--amber-bg);color:var(--amber);}
+  .tag-bad{background:var(--red-bg);color:var(--red-d);}
+
+  /* ============ CHARTS ============ */
+  .chart-wrap{position:relative;width:100%;}
+
+  /* ============ ALERT PANEL (sidebar) ============ */
+  .scroll{overflow-y:auto;}
+  .scroll::-webkit-scrollbar{width:8px;}
+  .scroll::-webkit-scrollbar-thumb{background:#CFD5DC;border-radius:4px;}
+  .alert-item{
+    border:1px solid var(--line);border-left:3px solid var(--red);
+    background:var(--red-bg);border-radius:3px;padding:9px 11px;margin-bottom:8px;
+  }
+  .alert-item.warn{border-left-color:#E39A0C;background:var(--amber-bg);}
+  .alert-item:last-child{margin-bottom:0;}
+  .alert-item-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;}
+  .alert-code{font-family:'Roboto Mono',monospace;font-weight:700;font-size:12.5px;}
+  .alert-line{font-size:11.5px;color:#3B4048;}
+  .alert-line b{color:var(--ink);font-weight:700;}
+  .mini-bar{height:4px;background:rgba(0,0,0,.09);border-radius:2px;margin-top:7px;overflow:hidden;}
+  .mini-bar i{display:block;height:100%;border-radius:2px;}
+
+  /* ============ LIST ROWS (reorder / fbt) ============ */
+  .alert-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line-2);}
+  .alert-row:last-child{border-bottom:none;}
+  .circ{
+    width:30px;height:30px;border-radius:3px;display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:11px;flex-shrink:0;letter-spacing:.02em;
+  }
+  .alert-mid{flex:1;min-width:0;}
+  .alert-name{font-weight:500;font-size:12.5px;}
+  .alert-cat{font-size:11px;color:var(--ink-2);}
+  .alert-loss{font-family:'Roboto Mono',monospace;font-size:11.5px;color:var(--ink-2);min-width:96px;text-align:right;}
+  .alert-units{display:block;font-family:Roboto,Helvetica,Arial,sans-serif;font-size:10px;color:var(--ink-3);margin-top:2px;}
+  .bar{width:80px;height:5px;background:#E7EAEE;border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle;}
+  .bar i{display:block;height:100%;border-radius:2px;}
+  .status{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:3px;white-space:nowrap;}
+  .s-out{background:var(--red-bg);color:var(--red-d);}
+  .s-low{background:var(--amber-bg);color:var(--amber);}
+
+  /* ============ FREQUENTLY BOUGHT TOGETHER ============ */
+  .fbt-toolbar{padding:11px 15px;border-bottom:1px solid var(--line-2);display:flex;align-items:center;gap:10px 12px;flex-wrap:wrap;background:#FAFBFC;}
+  .fbt-toolbar input{flex:1;min-width:200px;padding:7px 11px;border:1px solid var(--line);border-radius:3px;font-size:12px;font-family:inherit;background:#fff;color:var(--ink);}
+  .fbt-toolbar input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2px rgba(230,0,18,.08);}
+  .fbt-toolbar .filters{flex:1 1 auto;}
+  .fbt-filter-row{flex:1 1 100%;display:flex;align-items:flex-start;gap:10px;}
+  .fbt-filter-label{flex:0 0 62px;padding-top:5px;font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);}
+  #fbtStrengthFilters .chip{font-weight:500;}
+  #fbtStrengthFilters .chip[data-fs="vstrong"]{background:var(--green-bg);color:var(--green);border-color:#CBE6D6;}
+  #fbtStrengthFilters .chip[data-fs="strong"]{background:var(--blue-bg);color:var(--blue);border-color:#CFDEF7;}
+  #fbtStrengthFilters .chip[data-fs="moderate"]{background:var(--amber-bg);color:var(--amber);border-color:#F1E1C0;}
+  #fbtStrengthFilters .chip[data-fs="notable"]{background:#EEF0F3;color:var(--ink-2);border-color:#DFE3E8;}
+  #fbtStrengthFilters .chip.active{color:#fff;font-weight:700;}
+  #fbtStrengthFilters .chip.active[data-fs="vstrong"]{background:var(--green);border-color:var(--green);}
+  #fbtStrengthFilters .chip.active[data-fs="strong"]{background:var(--blue);border-color:var(--blue);}
+  #fbtStrengthFilters .chip.active[data-fs="moderate"]{background:var(--amber);border-color:var(--amber);}
+  #fbtStrengthFilters .chip.active[data-fs="notable"]{background:var(--dark);border-color:var(--dark);}
+  .fbt-help{position:relative;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#DFE3E8;color:var(--ink-2);font-size:10px;font-weight:700;font-style:normal;cursor:help;flex-shrink:0;}
+  .fbt-help:hover .fbt-tooltip{display:block;}
+  .fbt-tooltip{display:none;position:absolute;top:22px;right:-8px;width:250px;background:var(--dark);color:#fff;font-size:11px;line-height:1.5;padding:10px 11px;border-radius:5px;z-index:20;font-weight:400;text-transform:none;letter-spacing:0;box-shadow:0 4px 14px rgba(0,0,0,.22);}
+  .fbt-tooltip:after{content:"";position:absolute;top:-5px;right:12px;border:5px solid transparent;border-bottom-color:var(--dark);}
+
+  .fbt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px 15px;}
+  @media (max-width:1050px){.fbt-grid{grid-template-columns:1fr;}}
+
+  .fbt-card{border:1px solid var(--line);border-radius:6px;padding:11px 12px 12px;background:#fff;transition:border-color .15s,box-shadow .15s;}
+  .fbt-card:hover{border-color:#C7CDD4;box-shadow:0 2px 8px rgba(16,20,24,.06);}
+  .fbt-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
+  .fbt-strength{font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:3px;white-space:nowrap;cursor:help;}
+  .fbt-strength-vstrong{background:var(--green-bg);color:var(--green);}
+  .fbt-strength-strong{background:var(--blue-bg);color:var(--blue);}
+  .fbt-strength-moderate{background:var(--amber-bg);color:var(--amber);}
+  .fbt-strength-notable{background:#EEF0F3;color:var(--ink-2);}
+  .fbt-cooc{font-size:10.5px;color:var(--ink-2);white-space:nowrap;display:flex;align-items:center;gap:4px;}
+  .fbt-cooc b{color:var(--ink);font-family:'Roboto Mono',monospace;font-size:11.5px;}
+
+  .fbt-pairing{display:flex;align-items:stretch;gap:8px;margin-bottom:10px;}
+  .fbt-item{flex:1;min-width:0;background:#F6F7F9;border:1px solid var(--line-2);border-radius:4px;padding:7px 9px;}
+  .fbt-item-code{font-family:'Roboto Mono',monospace;font-weight:700;font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fbt-item-cat{font-size:10px;color:var(--ink-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fbt-plus{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:var(--dark);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;align-self:center;}
+
+  .fbt-insight{font-size:11px;color:var(--ink-2);line-height:1.45;}
+  .fbt-insight b{color:var(--ink);}
+  .fbt-conf-bar{height:5px;border-radius:2px;background:#E7EAEE;overflow:hidden;margin-bottom:7px;}
+  .fbt-conf-bar i{display:block;height:100%;border-radius:2px;background:var(--red);}
+  .fbt-insight-sub{color:var(--ink-3);}
+
+  /* ============ FILTER CHIPS + SEARCH ============ */
+  .filters{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{
+    font-size:11px;padding:5px 11px;border-radius:3px;border:1px solid var(--line);
+    background:#fff;color:var(--ink-2);cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  .chip:hover{border-color:#BFC6CE;color:var(--ink);}
+  .chip.active{background:var(--dark);color:#fff;border-color:var(--dark);font-weight:500;}
+  .search-box{padding:11px 15px;border-bottom:1px solid var(--line-2);display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#FAFBFC;}
+  .search-box input{
+    flex:1;min-width:220px;padding:7px 11px;border:1px solid var(--line);border-radius:3px;
+    font-size:12px;font-family:inherit;background:#fff;color:var(--ink);
+  }
+  .search-box input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2px rgba(230,0,18,.08);}
+
+  /* ============ TABLES ============ */
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  thead th{
+    background:#F6F7F9;color:var(--ink-2);
+    font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  td{padding:9px 12px;border-bottom:1px solid var(--line-2);vertical-align:middle;}
+  tbody tr:hover{background:#FAFBFC;}
+  tbody tr:last-child td{border-bottom:none;}
+  .cat{color:var(--ink-2);}
+  .rev{font-family:'Roboto Mono',monospace;text-align:right;white-space:nowrap;}
+  code.code{font-family:'Roboto Mono',monospace;color:var(--ink-2);font-size:11.5px;}
+
+  /* ============ BADGES ============ */
+  .badge-status{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:3px;white-space:nowrap;display:inline-block;}
+
+  .card-tag{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 9px;border-radius:10px;display:inline-block;margin-left:9px;vertical-align:middle;white-space:nowrap;}
+  .card-tag-alert{background:var(--red-bg);color:var(--red-d);}
+  .card-tag-quick{background:var(--blue-bg);color:var(--blue);}
+  .card-tag-full{background:var(--purple-bg);color:var(--purple);}
+
+  /* ---- Product Status Summary: at-a-glance tiles ---- */
+  .status-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+  @media (max-width:900px){.status-tiles{grid-template-columns:1fr;}}
+  .status-summary-bar{border-bottom:1px solid var(--line-2);background:#FCFDFE;}
+  .status-summary-head{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);margin-bottom:10px;}
+  .status-summary-bar .status-stack{margin-top:11px;}
+  .status-tile{
+    display:flex;align-items:center;gap:13px;width:100%;text-align:left;cursor:pointer;
+    border:1px solid var(--line);border-left:4px solid var(--line);border-radius:5px;
+    background:#fff;padding:12px 14px;font-family:inherit;transition:border-color .15s,box-shadow .15s,background .15s;
+  }
+  .status-tile:hover{box-shadow:0 2px 10px rgba(16,20,24,.07);background:#FCFDFE;}
+  .status-tile.active{background:#FAFBFC;}
+  .status-tile .st-count{font-size:26px;font-weight:700;line-height:1;letter-spacing:-.02em;min-width:78px;}
+  .status-tile .st-label{font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;}
+  .status-tile .st-sub{font-size:10.5px;color:var(--ink-3);margin-top:3px;}
+  .status-tile .st-mid{flex:1;min-width:0;}
+  .status-tile .st-go{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;opacity:.55;}
+  .status-tile:hover .st-go{opacity:1;}
+  .st-continuing{border-left-color:var(--green);} .st-continuing .st-count,.st-continuing .st-label,.st-continuing .st-go{color:var(--green);}
+  .st-discontinued{border-left-color:var(--red);} .st-discontinued .st-count,.st-discontinued .st-label,.st-discontinued .st-go{color:var(--red-d);}
+  .st-tba{border-left-color:var(--amber);} .st-tba .st-count,.st-tba .st-label,.st-tba .st-go{color:var(--amber);}
+  .status-stack{display:flex;height:9px;border-radius:3px;overflow:hidden;background:#E7EAEE;}
+  .status-stack i{display:block;height:100%;}
+  .filter-pill{
+    display:inline-flex;align-items:center;gap:7px;flex-shrink:0;cursor:pointer;font-family:inherit;
+    font-size:11px;font-weight:700;padding:6px 11px;border-radius:3px;
+    background:var(--dark);color:#fff;border:1px solid var(--dark);
+  }
+  .filter-pill:hover{background:#000;}
+  .status-pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .status-pill{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:12px;display:inline-flex;align-items:center;gap:5px;}
+  .status-continuing{background:var(--green-bg);color:var(--green);}
+  .status-discontinued{background:var(--red-bg);color:var(--red-d);}
+  .status-tba{background:var(--amber-bg);color:var(--amber);}
+
+  .badge-abc-a,.badge-abc-b,.badge-abc-c,
+  .badge-xyz-x,.badge-xyz-y,.badge-xyz-z,.badge-xyz-insufficient{
+    font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;display:inline-block;
+  }
+  .badge-vol-a,.badge-vol-b,.badge-vol-c{
+    display:inline-block;padding:2px 7px;border-radius:3px;font-size:10.5px;font-weight:600;white-space:nowrap;
+  }
+  .badge-vol-a{background:#E9F0FC;color:#1E5AC8;}
+  .badge-vol-b{background:#EEEAFB;color:#5B4BC4;}
+  .badge-vol-c{background:#EEF0F3;color:var(--ink-2);}
+  .units-cell{font-family:'Roboto Mono',monospace;font-size:11.5px;}
+  .badge-abc-a{background:var(--green-bg);color:var(--green);}
+  .badge-abc-b{background:var(--amber-bg);color:var(--amber);}
+  .badge-abc-c{background:#EEF0F3;color:var(--ink-2);}
+  .badge-xyz-x{background:var(--blue-bg);color:var(--blue);}
+  .badge-xyz-y{background:var(--amber-bg);color:var(--amber);}
+  .badge-xyz-z{background:var(--red-bg);color:var(--red-d);}
+  .badge-xyz-insufficient{background:#EEF0F3;color:var(--ink-3);}
+
+  .legend{display:flex;flex-direction:column;gap:5px;margin:9px 0 0;font-size:10.5px;line-height:1.45;color:var(--ink-3);max-width:660px;}
+  .legend > div{display:flex;align-items:baseline;gap:8px;}
+  .legend .badge-reorder,.legend .fbt-strength{flex:0 0 auto;}
+  .legend .legend-note{display:block;color:var(--ink-3);}
+  .legend.legend-2col{display:grid;grid-template-columns:1fr 1fr;gap:6px 34px;max-width:none;}
+  .legend.legend-2col .badge-segment{flex:0 0 132px;text-align:center;}
+  .legend.legend-2col .legend-note{grid-column:1 / -1;margin-top:4px;padding-top:8px;border-top:1px solid var(--line-2);}
+  @media (max-width:900px){.legend.legend-2col{grid-template-columns:1fr;}}
+
+  .tier-legend{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 22px;
+    background:#E2E7EC;border:1px solid #C8D0D8;border-radius:8px;
+    padding:10px 14px;margin:10px 0 0;font-size:10.5px;line-height:1.5;color:var(--ink-2);
+  }
+  .tier-legend-group{display:flex;flex-direction:column;gap:4px;}
+  .tier-legend-heading{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);margin-bottom:1px;}
+  .tier-legend-group > div{display:flex;align-items:baseline;gap:7px;}
+  .tier-legend [class^="badge-abc-"],.tier-legend [class^="badge-xyz-"],.tier-legend [class^="badge-vol-"]{box-shadow:0 0 0 1px rgba(16,20,24,.08);}
+  .tier-legend .badge-abc-c{background:#FBFCFD;color:var(--ink-2);}
+  .tier-legend-note{grid-column:1 / -1;margin-top:6px;padding-top:8px;border-top:1px solid #C8D0D8;color:var(--ink);}
+  .badge-reorder{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;padding:4px 10px;border-radius:6px;display:inline-block;white-space:nowrap;}
+  .badge-reorder-overdue{background:#FDECEE;color:#A8000D;}
+  .badge-reorder-approaching{background:#FDF3E2;color:#B0740A;}
+  .badge-reorder-expected{background:#E7F5EC;color:#12864B;}
+  .badge-reorder .pct{opacity:.7;font-weight:700;margin-left:2px;}
+  .badge-segment{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:3px;display:inline-block;white-space:nowrap;}
+
+  .tag-vip{background:var(--blue-bg);color:var(--blue);padding:3px 8px;border-radius:3px;font-size:10.5px;white-space:nowrap;}
+  .tag-enduser{background:#EEF0F3;color:var(--ink-2);padding:3px 8px;border-radius:3px;font-size:10.5px;white-space:nowrap;}
+
+  /* ============ PAGINATION ============ */
+  .pagination-info{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+    padding:10px 15px;font-size:11px;color:var(--ink-2);
+    border-top:1px solid var(--line-2);background:#FAFBFC;
+  }
+  .pagination-controls{display:flex;gap:6px;align-items:center;}
+  .pagination-controls button{
+    padding:5px 11px;border:1px solid var(--line);background:#fff;border-radius:3px;
+    cursor:pointer;font-size:11px;color:var(--ink);font-family:inherit;
+  }
+  .pagination-controls button:hover:not(:disabled){border-color:var(--red);color:var(--red-d);}
+  .pagination-controls button:disabled{opacity:.45;cursor:not-allowed;}
+  .pagination-controls select{
+    padding:5px 9px;border:1px solid var(--line);background:#fff;border-radius:3px;
+    font-size:11px;color:var(--ink);font-family:inherit;
+  }
+
+  .card-tag-lstm{background:var(--purple-bg);color:var(--purple);}
+  .legend.model-legend{max-width:none;gap:6px;margin-top:10px;}
+  .legend.model-legend > div{align-items:flex-start;}
+  .legend.model-legend b{color:var(--ink);}
+  .mdl-swatch{flex:0 0 16px;height:3px;border-radius:2px;margin-top:7px;display:inline-block;}
+  .lstm-sub-head{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);margin:4px 0 8px;}
+  .lstm-table{width:100%;border-collapse:collapse;font-size:11.5px;}
+  .lstm-table th{background:#F6F7F9;font-size:10px;padding:7px 10px;}
+  .lstm-table td{padding:7px 10px;border-bottom:1px solid var(--line-2);}
+  .lstm-table tr.win td{background:#FBFCFD;font-weight:500;}
+  .lstm-table tr.model td{background:var(--purple-bg);font-weight:700;color:var(--purple);}
+  .lstm-table td.num{text-align:right;font-family:'Roboto Mono',monospace;}
+
+  /* ============ FOOTER ============ */
+  .footer{
+    background:#fff;border-top:1px solid var(--line);margin-top:16px;
+    padding:12px 22px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    font-size:11px;color:var(--ink-3);
+  }
+
+  @media (max-width:1280px){
+    .g-kpi{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .g-2-1,.g-1-1p4,.g-3,.g-2{grid-template-columns:minmax(0,1fr);}
+  }
+  @media (max-width:760px){
+    .topbar{flex-wrap:wrap;gap:10px;}
+    .topbar h1{text-align:left;flex:1 1 100%;order:3;font-size:12.5px;}
+    .g-kpi{grid-template-columns:minmax(0,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ TOP BAR ============ -->
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 100 97" xmlns="http://www.w3.org/2000/svg" aria-label="SOE Mitsubishi">
+      <g fill="#E60012">
+        <polygon points="50,3 67,32 50,61 33,32"/>
+        <polygon points="32,35 49,64 32,93 15,64"/>
+        <polygon points="68,35 85,64 68,93 51,64"/>
+      </g>
+    </svg>
+    <div>
+      <div class="brand-name">SOE MITSUBISHI</div>
+      <div class="brand-sub">Business Intelligence</div>
+    </div>
+  </div>
+
+  <h1>Web Dashboard: Business Performance &amp; Inventory Management</h1>
+
+  <div class="topbar-meta">
+    <div class="meta-txt">
+      <b id="topbarSpan">—</b> <span id="topbarRange"></span><br><span id="topbarCounts"></span>
+    </div>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- ============ KPI ROW ============ -->
+  <div class="grid g-kpi">
+    <div class="kpi">
+      <div class="kpi-top">
+        <div class="kpi-label">Total Revenue</div>
+        <canvas class="spark" id="spark1" width="128" height="48"></canvas>
+      </div>
+      <div class="kpi-value"><span id="kpiRevenue">-</span><small id="kpiRevenueSub"></small></div>
+      <div class="kpi-bar"><i id="kpiRevenueBar" style="width:0%"></i></div>
+      <p class="kpi-desc">Every sales-order line (price × qty) booked between <span class="period"></span>.</p>
+      <div class="kpi-foot"><span id="kpiRevenueNote"></span><span class="tag tag-ok" id="kpiRevenueTrend">-</span></div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-top">
+        <div class="kpi-label">Avg Monthly Revenue</div>
+        <canvas class="spark" id="spark2" width="128" height="48"></canvas>
+      </div>
+      <div class="kpi-value"><span id="kpiMonthly">-</span><small id="kpiMonthlySub"></small></div>
+      <div class="kpi-bar"><i id="kpiMonthlyBar" style="width:0%"></i></div>
+      <p class="kpi-desc">Total revenue ÷ <span class="nmonths"></span> — every month the data covers (<span class="period"></span>, no gaps).</p>
+      <div class="kpi-foot"><span id="kpiMonthlyNote"></span><span class="tag tag-ok" id="kpiMonthlyTrend">-</span></div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-top">
+        <div class="kpi-label">Total Units Sold</div>
+        <canvas class="spark" id="spark3" width="128" height="48"></canvas>
+      </div>
+      <div class="kpi-value"><span id="kpiUnits">-</span><small id="kpiUnitsSub"></small></div>
+      <div class="kpi-bar"><i id="kpiUnitsBar" style="width:0%"></i></div>
+      <p class="kpi-desc">Pieces shipped on those same sales-order lines — the volume the warehouse actually had to move, <span class="period"></span>.</p>
+      <div class="kpi-foot"><span id="kpiUnitsNote"></span><span class="tag tag-ok" id="kpiUnitsTrend">-</span></div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-top">
+        <div class="kpi-label">Total Inventory Items</div>
+      </div>
+      <div class="kpi-value"><span id="kpiInventory">-</span><small id="kpiInventorySub"></small></div>
+      <div class="kpi-bar"><i id="kpiInventoryBar" style="width:0%"></i></div>
+      <p class="kpi-desc">SKUs (Stock Keeping Units) in the item master with a list price, in 16 categories.</p>
+      <div class="kpi-foot"><span id="kpiInventoryNote"></span><span class="tag tag-bad" id="kpiInventoryTrend">-</span></div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-top">
+        <div class="kpi-label">Active Products</div>
+      </div>
+      <div class="kpi-value"><span id="kpiActive">-</span><small id="kpiActiveSub"></small></div>
+      <div class="kpi-bar"><i id="kpiActiveBar" style="width:0%"></i></div>
+      <p class="kpi-desc">Items still marked "Continue" in the item master — supplied and sellable today.</p>
+      <div class="kpi-foot"><span id="kpiActiveNote"></span><span class="tag tag-ok" id="kpiActiveTrend">-</span></div>
+    </div>
+  </div>
+
+  <!-- ============ LSTM FORECAST (experimental) ============ -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-hd">
+      <div>
+        <h2><span class="accent"></span> <span id="fcTitle">AI Revenue Forecast</span> <span class="card-tag card-tag-lstm">Experimental</span></h2>
+        <p class="sub">Five forecasting models on the same 209 weeks of real sales-order history — four trained from scratch, plus our own Ensemble that averages them — each projecting Apr 2025 – Mar 2026 and each scored on the same held-out year. Switch between <b>฿ Revenue</b> and <b>Units</b> — both are forecast separately, on the same data and the same protocol.</p>
+        <p class="sub" id="lstmHeadline" style="margin-top:4px;"></p>
+        <div class="legend model-legend">
+          <div><span class="mdl-swatch" style="background:#C2185B;"></span><span><b>Ensemble</b> — our own model, built on top of the other four. For every month it simply takes the plain average of the four forecasts, with no extra training and no weighting. Each model is wrong in a different direction, so averaging cancels part of that error — which is why on the held-out year it beats every single one of them.</span></div>
+          <div><span class="mdl-swatch" style="background:#5B4BC4;"></span><span><b>LSTM</b> — Long Short-Term Memory, a recurrent neural network. Reads the last 26 weeks in order and learns repeating shapes, so it is the only method here that can bend with the season instead of just following the level.</span></div>
+          <div><span class="mdl-swatch" style="background:#1E5AC8;"></span><span><b>SARIMA</b> — Seasonal AutoRegressive Integrated Moving Average, the classical statistical forecaster. It differences the series to remove the trend, then models what is left as a mix of past values and past errors. Simple and hard to beat on short series, but it only sees the revenue line itself.</span></div>
+          <div><span class="mdl-swatch" style="background:#0E8074;"></span><span><b>LightGBM</b> — gradient boosted decision trees. Instead of reading the sequence it learns from engineered features (revenue 1–52 weeks ago, 4- and 12-week averages, week of year), then adds hundreds of small trees that each correct the previous error. Strong on tabular problems, but trees cannot extrapolate beyond values they have seen.</span></div>
+          <div><span class="mdl-swatch" style="background:#C2540C;"></span><span><b>XGBoost</b> — extreme gradient boosting. Also a forest of corrective trees, but each split is chosen by a regularised gain that trades accuracy against tree complexity, which keeps it steadier than plain boosting on small data.</span></div>
+        </div>
+      </div>
+      <div id="fcMetric" class="filters" style="margin-left:auto;">
+        <button class="chip active" data-fc="rev" title="Forecast in baht">฿ Revenue</button>
+        <button class="chip" data-fc="qty" title="Forecast in units shipped">Units</button>
+      </div>
+    </div>
+    <div class="card-bd">
+      <div class="chart-wrap" style="height:300px;" id="lstm_chart"></div>
+    </div>
+    <div class="card-bd" style="border-top:1px solid var(--line-2);">
+      <div class="lstm-sub-head" id="fcBtHead">Backtest — predicted vs actual, Apr 2024 – Mar 2025</div>
+      <p class="kpi-desc" style="min-height:0;margin:0 0 8px;" id="fcBtSub">Trained on Apr 2021 – Mar 2024 only, then asked to predict the year it had never seen — all five models over the same year. "Off %" is the average monthly error.</p>
+      <div class="chart-wrap" style="height:300px;" id="lstm_backtest"></div>
+    </div>
+  </div>
+
+  <!-- ============ QUARTERLY REVENUE (full width) ============ -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-hd">
+      <div>
+        <h2><span class="accent"></span> <span id="qTitle">Quarterly Revenue</span></h2>
+        <p class="sub" id="progressChartSub">Fiscal-quarter revenue by year, actual</p>
+      </div>
+      <div id="qMetric" class="filters">
+        <button class="chip active" data-q="rev" title="Baht booked in each fiscal quarter">฿ Revenue</button>
+        <button class="chip" data-q="qty" title="Units shipped in each fiscal quarter">Units</button>
+      </div>
+    </div>
+    <div class="card-bd"><div class="chart-wrap" style="height:300px;" id="progress_chart"></div></div>
+  </div>
+
+  <!-- ============ ALERTS + STATUS  |  REORDER ALERTS ============ -->
+  <div class="grid g-1-1p4">
+    <div class="card">
+      <div class="card-hd">
+        <div>
+          <h2><span class="accent"></span> Real-Time Alerts &amp; Action Items <span class="card-tag card-tag-alert">Needs Action</span></h2>
+          <p class="sub">Items marked Discontinued or To Be Advised that are still receiving sales orders — a mismatch that needs fixing</p>
+          <p class="sub" id="mismatchCounts" style="margin-top:4px;"></p>
+        </div>
+        <div id="alertFilters" class="filters">
+          <button class="chip" data-af="Discontinued" title="Click to filter, click again to clear">Discontinued</button>
+          <button class="chip" data-af="To Be Advised" title="Click to filter, click again to clear">To Be Advised</button>
+        </div>
+      </div>
+      <div class="card-bd tight scroll" style="flex:1 1 auto;min-height:280px;max-height:600px;" id="alertList"></div>
+      <div class="pagination-info">
+        <div>
+          <span id="alertRecordInfo">Showing 0 items</span> |
+          <span id="alertPageInfo">Page 1</span>
+        </div>
+        <div class="pagination-controls">
+          <select id="alertPageSizeSelect" onchange="changeAlertPageSize()">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <button id="alertPrevBtn" onclick="changeAlertPage(-1)">←</button>
+          <button id="alertNextBtn" onclick="changeAlertPage(1)">→</button>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="card">
+      <div class="card-hd">
+        <div>
+          <h2><span class="accent"></span> Reorder Alerts</h2>
+          <p class="sub">Who to call next: customers whose usual reorder date for a product has arrived or passed, judged against that customer's own ordering rhythm</p>
+          <p class="sub" id="reorderCounts" style="margin-top:4px;"></p>
+          <div class="legend">
+            <div><span class="badge-reorder badge-reorder-approaching">Approaching</span> 70–99% of the way through this customer's usual gap between orders — the reorder date is coming up</div>
+            <div><span class="badge-reorder badge-reorder-expected">Expected Now</span> 100–129% — the usual reorder date has just arrived; call this week</div>
+            <div><span class="badge-reorder badge-reorder-overdue">Overdue</span> 130% or more — the date has passed; the higher the number, the longer they have gone quiet</div>
+          </div>
+          <p class="kpi-desc" style="min-height:0;margin:8px 0 0;max-width:640px;">Included: pairs ordered 3+ times, last ordered within 12 months, and at most 5x past cycle — anyone further gone has stopped buying rather than being due. Value = average order quantity x list price, less the 15.1% average End User discount. Timing is as of 31 Mar 2025, the last day of data.</p>
+        </div>
+        <div id="reorderFilters" class="filters">
+          <button class="chip active" data-rf="all">All</button>
+          <button class="chip" data-rf="Approaching Reorder">Approaching</button>
+          <button class="chip" data-rf="Expected Now">Expected Now</button>
+          <button class="chip" data-rf="Overdue">Overdue</button>
+        </div>
+      </div>
+      <div class="card-bd tight scroll" style="flex:1 1 auto;min-height:280px;max-height:470px;" id="reorderList"></div>
+      <div class="pagination-info">
+        <div>
+          <span id="reorderRecordInfo">Showing 0 items</span> |
+          <span id="reorderPageInfo">Page 1</span>
+        </div>
+        <div class="pagination-controls">
+          <select id="reorderPageSizeSelect" onchange="changeReorderPageSize()">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <button id="reorderPrevBtn" onclick="changeReorderPage(-1)">←</button>
+          <button id="reorderNextBtn" onclick="changeReorderPage(1)">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FREQUENTLY BOUGHT TOGETHER ============ -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-hd">
+      <div>
+        <h2><span class="accent"></span> Frequently Bought Together</h2>
+        <p class="sub">Product pairs customers repeatedly order in the same purchase — use these to suggest add-ons, build bundles, or prompt reorders</p>
+        <div class="legend">
+          <div><span class="fbt-strength fbt-strength-vstrong">Always together</span> every order containing one item also contained the other (100%)</div>
+          <div><span class="fbt-strength fbt-strength-strong">Usually together</span> 75–99% of those orders</div>
+          <div><span class="fbt-strength fbt-strength-moderate">Often together</span> 60–74%</div>
+          <div><span class="fbt-strength fbt-strength-notable">Sometimes together</span> under 60% — worth knowing, but not a reliable bundle</div>
+          <div class="legend-note">The percentage is a <b>share, not a count</b>: "on 96% of ATA orders (27 of 28)" means ATA appeared on 28 sales orders and 27 of them also had the partner item. That is why two cards can both show 5 shared orders and still carry different labels — 5 out of 5 is "Always", 5 out of 8 is "Often". Hover a card for the reverse direction.</div>
+        </div>
+      </div>
+    </div>
+    <div class="fbt-toolbar">
+      <input type="text" id="fbtSearch" placeholder="Search by item code or category..." onkeyup="onFbtSearchInput()">
+      <span class="fbt-help">?<span class="fbt-tooltip"><b style="color:#fff;">Shared orders</b> = sales orders that contained both items (minimum 5). <b style="color:#fff;">The badge %</b> = of all orders containing the stronger item, the share that also contained the other one — that share, not the count, sets the label. Cards are ranked by shared orders × that share, so frequent and consistent pairs come first.</span></span>
+      <div class="fbt-filter-row" style="order:3;"><span class="fbt-filter-label">Category</span><div id="fbtCategoryFilters" class="filters"></div></div>
+      <div class="fbt-filter-row" style="order:4;"><span class="fbt-filter-label">Strength</span><div id="fbtStrengthFilters" class="filters"></div></div>
+    </div>
+    <div class="card-bd flush scroll" style="max-height:420px;" id="fbtList"></div>
+    <div class="pagination-info">
+      <div>
+        <span id="fbtRecordInfo">Showing 0 items</span> |
+        <span id="fbtPageInfo">Page 1</span>
+      </div>
+      <div class="pagination-controls">
+        <select id="fbtPageSizeSelect" onchange="changeFbtPageSize()">
+          <option value="6">6</option>
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+        <button id="fbtPrevBtn" onclick="changeFbtPage(-1)">←</button>
+        <button id="fbtNextBtn" onclick="changeFbtPage(1)">→</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DETAILED INVENTORY ============ -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-hd">
+      <div>
+        <h2><span class="accent"></span> Detailed Inventory Management <span class="card-tag card-tag-full">Full Detail + Pricing</span></h2>
+        <p class="sub">The complete item-by-item view — status, pricing, value tier, units shipped, volume tier, demand pattern, and recommended action for every product</p>
+        <div class="tier-legend">
+          <div class="tier-legend-group">
+            <div class="tier-legend-heading">Value Tier — by revenue contribution</div>
+            <div><span class="badge-abc-a">High Value</span> drives most of your revenue</div>
+            <div><span class="badge-abc-b">Medium Value</span> steady, moderate contributor</div>
+            <div><span class="badge-abc-c">Low Value</span> contributes little on its own</div>
+          </div>
+          <div class="tier-legend-group">
+            <div class="tier-legend-heading">Demand Pattern — by predictability</div>
+            <div><span class="badge-xyz-x">Stable Demand</span> consistent, easy to forecast</div>
+            <div><span class="badge-xyz-y">Variable Demand</span> fluctuates, may need buffer stock</div>
+            <div><span class="badge-xyz-z">Irregular Demand</span> sporadic, hard to forecast</div>
+          </div>
+          <div class="tier-legend-group">
+            <div class="tier-legend-heading">Volume Tier — by units shipped</div>
+            <div><span class="badge-vol-a">High Volume</span> the SKUs that make up the top 80% of all pieces shipped</div>
+            <div><span class="badge-vol-b">Medium Volume</span> the next 15% of pieces</div>
+            <div><span class="badge-vol-c">Low Volume</span> the remaining 5% — moves rarely</div>
+          </div>
+          <div class="tier-legend-note">Read Value Tier and Volume Tier together — they disagree more often than you would expect. A <b>Low Value + High Volume</b> item is cheap but fills the warehouse and ties up picking time, while <b>High Value + Low Volume</b> earns well on a handful of orders a year and rarely deserves standing stock. Demand Pattern then says how safely you can plan either one.</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-bd status-summary-bar">
+      <div class="status-summary-head">Status summary — click a status to filter the table below</div>
+      <div id="statusTiles" class="status-tiles"></div>
+      <div class="status-stack" id="statusStack"></div>
+      <p class="kpi-desc" style="min-height:0;margin:8px 0 0;" id="statusCounts"></p>
+    </div>
+    <div class="search-box">
+      <input type="text" id="inventorySearch" placeholder="Search by Item Internal ID, Item Code, Category..." onkeyup="onSearchInput()">
+      <button id="inventoryStatusPill" class="filter-pill" style="display:none;" onclick="clearInventoryStatus()"></button>
+      <div id="segmentToggle" class="filters">
+        <button class="chip active" data-seg="enduser">End User pricing</button>
+        <button class="chip" data-seg="vip">VIP pricing</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Item Internal ID</th>
+            <th>Item Code</th>
+            <th>Category 1</th>
+            <th>Category 2</th>
+            <th>Value Tier</th>
+            <th>Units Sold (4Y)</th>
+            <th>Volume Tier</th>
+            <th>Demand Pattern</th>
+            <th>Status</th>
+            <th>List Price</th>
+            <th>Discount Rate</th>
+            <th>Net Price</th>
+            <th>Strategic Action</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="pagination-info">
+      <div>
+        <span id="recordCountInfo">Showing 0 items</span> |
+        <span id="pageNumberInfo">Page 1</span>
+      </div>
+      <div class="pagination-controls">
+        <label for="pageSizeSelect">Items per page:</label>
+        <select id="pageSizeSelect" onchange="changePageSize()">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+        <button id="prevBtn" onclick="changePage(-1)">← Previous</button>
+        <button id="nextBtn" onclick="changePage(1)">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TOP CUSTOMERS ============ -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-hd">
+      <div>
+        <h2><span class="accent"></span> Top Customers</h2>
+        <p class="sub">2,159 customers ranked by total revenue, grouped into behavior groups based on how recently, how often, and how much they buy</p>
+        <div class="legend legend-2col">
+          <div><span class="badge-segment" style="background:var(--green-bg);color:var(--green);">Best Customers</span> buy often, buy a lot, and ordered recently</div>
+          <div><span class="badge-segment" style="background:var(--blue-bg);color:var(--blue);">Regular Customers</span> order fairly often and fairly recently, but spend less</div>
+          <div><span class="badge-segment" style="background:var(--purple-bg);color:var(--purple);">New &amp; Growing</span> recent or first-time buyers who haven't ordered much yet</div>
+          <div><span class="badge-segment" style="background:var(--red-bg);color:var(--red-d);">At Risk</span> used to order regularly but have gone quiet</div>
+          <div><span class="badge-segment" style="background:var(--gray-bg);color:var(--gray);">Inactive</span> haven't ordered in a long time and spent little even when they were active</div>
+          <div class="legend-note">Grouped by how recently, how often, and how much each customer buys. Colors run from healthiest (green) to dormant (gray).</div>
+        </div>
+      </div>
+    </div>
+    <div class="search-box">
+      <input type="text" id="customerSearch" placeholder="Search by company name or industry..." onkeyup="onCustomerSearchInput()">
+      <div id="segmentFilters" class="filters">
+        <button class="chip active" data-seg="all">All Customers</button>
+        <button class="chip" data-seg="Best Customers">Best Customers</button>
+        <button class="chip" data-seg="Regular Customers">Regular Customers</button>
+        <button class="chip" data-seg="At Risk">At Risk</button>
+        <button class="chip" data-seg="New &amp; Growing">New &amp; Growing</button>
+        <button class="chip" data-seg="Inactive">Inactive</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Type</th>
+            <th>Industry</th>
+            <th style="text-align:right;">Total Revenue</th>
+            <th style="text-align:right;">Units Bought</th>
+            <th>Orders</th>
+            <th>Products Overdue</th>
+            <th>Segment</th>
+          </tr>
+        </thead>
+        <tbody id="customerBody"></tbody>
+      </table>
+    </div>
+    <div class="pagination-info">
+      <div>
+        <span id="custRecordInfo">Showing 0 items</span> |
+        <span id="custPageInfo">Page 1</span>
+      </div>
+      <div class="pagination-controls">
+        <label for="custPageSizeSelect">Items per page:</label>
+        <select id="custPageSizeSelect" onchange="changeCustPageSize()">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+        <button id="custPrevBtn" onclick="changeCustPage(-1)">← Previous</button>
+        <button id="custNextBtn" onclick="changeCustPage(1)">Next →</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <div>SOE Mitsubishi Co., Ltd. | Business Performance &amp; Inventory Dashboard</div>
+  <div>Data: item master · customer master · sales order history <span id="footerRange"></span></div>
+</div>
+
+<script>
+// ============ DATA FROM ORIGINAL DASHBOARD ============
+const inventoryData = /*{{inventoryData}}*/;
+
+// ============ QUANTITY (UNITS) — same orders as the revenue figures, counted in pieces ============
+const QTY = /*{{QTY}}*/;
+
+// weekly-unit forecast, same four models / same protocol as the revenue forecast
+const QTY_OUT = /*{{QTY_OUT}}*/;
+
+const AGG = /*{{AGG}}*/;
+
+const mismatchItems = /*{{mismatchItems}}*/;
+
+const itemClassification = /*{{itemClassification}}*/;
+
+const customerData = /*{{customerData}}*/;
+
+const reorderData = /*{{reorderData}}*/;
+
+const coOrderingPairs = /*{{coOrderingPairs}}*/;
+
+let filteredData = [...inventoryData];
+let currentSegment = 'enduser';
+let currentPage = 1;
+let pageSize = 20;
+
+function setSegment(segment) {
+  currentSegment = segment;
+  document.querySelectorAll('#segmentToggle .chip').forEach(b => b.classList.toggle('active', b.dataset.seg === segment));
+  renderTable();
+}
+
+document.querySelectorAll('#segmentToggle .chip').forEach(btn => {
+  btn.addEventListener('click', () => setSegment(btn.dataset.seg));
+});
+
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+
+  const totalItems = filteredData.length;
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const pageItems = filteredData.slice(startIndex, endIndex);
+
+  const discRate = currentSegment === 'vip' ? 0.37 : AGG.discount_enduser_pct / 100;
+  const discLabel = currentSegment === 'vip' ? '37% (Fixed VIP)' : `${AGG.discount_enduser_pct}% (Avg realized, End User)`;
+  const tagClass = currentSegment === 'vip' ? 'tag-vip' : 'tag-enduser';
+
+  if (pageItems.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--ink-2); padding: 24px;">No items match your search.</td></tr>`;
+  } else {
+    pageItems.forEach(item => {
+      const row = document.createElement('tr');
+      const statusClass = item.status === 'Continuing' ? 'status-continuing' : (item.status === 'To Be Advised' ? 'status-tba' : 'status-discontinued');
+      const netPrice = Math.round(item.price * (1 - discRate));
+
+      let strategicAction = item.status === "Continuing"
+        ? (currentSegment === 'enduser' ? "<b>High Margin Focus:</b> Prioritize stock supply" : "<b>VIP Retention:</b> Monitor net margin impact")
+        : (item.status === "To Be Advised" ? "<b>Pending Review:</b> Confirm status before action" : "<b>Phase Out:</b> Clear remaining inventory");
+
+      const cls = itemClassification[item.id];
+      const abc = cls ? cls.abc : '';
+      const xyz = cls ? cls.xyz : '';
+      const abcLabels = { A: 'High Value', B: 'Medium Value', C: 'Low Value' };
+      const xyzLabels = { X: 'Stable Demand', Y: 'Variable Demand', Z: 'Irregular Demand' };
+      const abcBadge = abc ? `<span class="badge-abc-${abc.toLowerCase()}">${abcLabels[abc] || abc}</span>` : '<span style="color:var(--ink-3);">—</span>';
+      const xyzKey = xyz === 'Insufficient Data' ? 'insufficient' : xyz.toLowerCase();
+      const xyzLabel = xyz === 'Insufficient Data' ? 'Not Enough Data' : (xyzLabels[xyz] || xyz);
+      const xyzBadge = xyz ? `<span class="badge-xyz-${xyzKey}">${xyzLabel}</span>` : '<span style="color:var(--ink-3);">—</span>';
+
+      // volume: how many pieces of this SKU actually shipped over the four years,
+      // and where that puts it against every other SKU (top 80% / next 15% / rest)
+      const units = QTY.units_by_item[item.id] || 0;
+      const volLabels = { A: 'High Volume', B: 'Medium Volume', C: 'Low Volume' };
+      const vol = QTY.volume_tier[item.id];
+      const unitsCell = units
+        ? `<span class="units-cell">${units.toLocaleString()}</span>`
+        : '<span style="color:var(--ink-3);">—</span>';
+      const volBadge = vol ? `<span class="badge-vol-${vol.toLowerCase()}">${volLabels[vol]}</span>`
+                           : '<span class="badge-xyz-insufficient">No Sales</span>';
+
+      row.innerHTML = `
+        <td><code class="code">${item.id}</code></td>
+        <td><b>${item.code}</b></td>
+        <td>${item.cat1}</td>
+        <td>${item.cat2}</td>
+        <td>${abcBadge}</td>
+        <td class="num">${unitsCell}</td>
+        <td>${volBadge}</td>
+        <td>${xyzBadge}</td>
+        <td><span class="badge-status ${statusClass}">${item.status}</span></td>
+        <td>฿${item.price.toLocaleString()}</td>
+        <td><span class="${tagClass}">${discLabel}</span></td>
+        <td><b>฿${netPrice.toLocaleString()}</b></td>
+        <td style="font-size: 12px;">${strategicAction}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  document.getElementById('recordCountInfo').innerText = totalItems > 0 
+    ? `Showing ${startIndex + 1} to ${endIndex} of ${totalItems.toLocaleString()} items`
+    : `Showing 0 items`;
+
+  document.getElementById('pageNumberInfo').innerText = `Page ${currentPage} of ${totalPages}`;
+  document.getElementById('prevBtn').disabled = currentPage === 1;
+  document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+}
+
+let inventoryStatusFilter = 'all';
+
+function applyInventoryFilters() {
+  const query = document.getElementById('inventorySearch').value.toLowerCase().trim();
+  filteredData = inventoryData
+    .filter(item => inventoryStatusFilter === 'all' || item.status === inventoryStatusFilter)
+    .filter(item =>
+      item.id.toLowerCase().includes(query) ||
+      item.code.toLowerCase().includes(query) ||
+      item.cat1.toLowerCase().includes(query) ||
+      item.cat2.toLowerCase().includes(query) ||
+      item.status.toLowerCase().includes(query)
+    );
+
+  const pill = document.getElementById('inventoryStatusPill');
+  if (inventoryStatusFilter === 'all') {
+    pill.style.display = 'none';
+  } else {
+    pill.style.display = 'inline-flex';
+    pill.innerHTML = `${inventoryStatusFilter} only <span style="opacity:.7;">✕</span>`;
+  }
+  document.querySelectorAll('#statusTiles .status-tile').forEach(b =>
+    b.classList.toggle('active', b.dataset.status === inventoryStatusFilter));
+
+  currentPage = 1;
+  renderTable();
+}
+
+function onSearchInput() {
+  applyInventoryFilters();
+}
+
+// Clicking a status tile filters the full table below and scrolls to it.
+function setInventoryStatus(status) {
+  inventoryStatusFilter = (inventoryStatusFilter === status) ? 'all' : status;
+  applyInventoryFilters();
+  document.getElementById('inventorySearch').closest('.search-box').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function clearInventoryStatus() {
+  inventoryStatusFilter = 'all';
+  applyInventoryFilters();
+}
+
+function changePage(direction) {
+  currentPage += direction;
+  renderTable();
+}
+
+function changePageSize() {
+  pageSize = parseInt(document.getElementById('pageSizeSelect').value);
+  currentPage = 1;
+  renderTable();
+}
+
+// ============ ALERTS AND PRODUCTS ============
+const CAT_PALETTE = ['#22262B','#E60012','#1E5AC8','#12864B','#B0740A','#5B4BC4','#A8000D','#4B5560'];
+function circColor(cat){
+  let hash = 0;
+  for (let i = 0; i < cat.length; i++) hash = (hash * 31 + cat.charCodeAt(i)) >>> 0;
+  return CAT_PALETTE[hash % CAT_PALETTE.length];
+}
+function initials(cat){
+  const words = cat.split(' ').filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return cat.slice(0, 2).toUpperCase();
+}
+
+let currentAlertPage = 1;
+let alertPageSize = 20;
+let currentAlertFilter = 'all';
+
+function changeAlertPage(direction){
+  currentAlertPage += direction;
+  renderAlerts();
+}
+
+function changeAlertPageSize(){
+  alertPageSize = parseInt(document.getElementById('alertPageSizeSelect').value);
+  currentAlertPage = 1;
+  renderAlerts();
+}
+
+function renderAlerts(){
+  const list = document.getElementById('alertList');
+  list.innerHTML='';
+
+  const counts = AGG.mismatch_by_status;
+  document.getElementById('mismatchCounts').innerHTML =
+    `<b>${AGG.mismatch_count}</b> of ${AGG.status_totals['Discontinued'] + AGG.status_totals['To Be Advised']} inactive items still selling — ` +
+    `<b>${counts['Discontinued']}</b> of ${AGG.status_totals['Discontinued']} Discontinued, ` +
+    `<b>${counts['To Be Advised']}</b> of ${AGG.status_totals['To Be Advised']} To Be Advised`;
+
+  const sorted = mismatchItems
+    .filter(m => currentAlertFilter === 'all' || m.status === currentAlertFilter)
+    .sort((a, b) => b.recent_revenue_6mo - a.recent_revenue_6mo);
+  const totalItems = sorted.length;
+  const totalPages = Math.ceil(totalItems / alertPageSize) || 1;
+  if (currentAlertPage > totalPages) currentAlertPage = totalPages;
+  if (currentAlertPage < 1) currentAlertPage = 1;
+
+  const startIndex = (currentAlertPage - 1) * alertPageSize;
+  const endIndex = Math.min(startIndex + alertPageSize, totalItems);
+  const pageItems = sorted.slice(startIndex, endIndex);
+
+  if (sorted.length === 0) {
+    list.innerHTML = `<div style="text-align:center;color:var(--ink-2);padding:22px;">No items with this status.</div>`;
+  }
+  const maxRev = Math.max(...sorted.map(m => m.recent_revenue_6mo), 1);
+  pageItems.forEach(item=>{
+    const isTba = item.status === 'To Be Advised';
+    const action = isTba
+      ? 'Confirm the item status before further quoting'
+      : 'Stop sale or re-activate — correct status in item master';
+    const row=document.createElement('div');
+    row.className = 'alert-item' + (isTba ? ' warn' : '');
+    row.innerHTML=`
+      <div class="alert-item-head">
+        <span class="alert-code">${item.code} <span style="color:var(--ink-3);font-weight:400;">· ${item.cat1}</span></span>
+        <span class="status ${isTba ? 's-low' : 's-out'}">${item.status}</span>
+      </div>
+      <div class="alert-line"><b>Alert:</b> still sold ฿${Number(item.recent_revenue_6mo).toLocaleString()} in the last 6 months</div>
+      <div class="alert-line"><b>Action:</b> ${action}</div>
+      <div class="mini-bar"><i style="width:${Math.round(item.recent_revenue_6mo / maxRev * 100)}%;background:${isTba ? '#E39A0C' : '#E60012'};"></i></div>`;
+    list.appendChild(row);
+  });
+
+  document.getElementById('alertRecordInfo').innerText = totalItems > 0
+    ? `Showing ${startIndex + 1}–${endIndex} of ${totalItems.toLocaleString()}`
+    : `Showing 0 items`;
+  document.getElementById('alertPageInfo').innerText = `Page ${currentAlertPage} of ${totalPages}`;
+  document.getElementById('alertPrevBtn').disabled = currentAlertPage === 1;
+  document.getElementById('alertNextBtn').disabled = currentAlertPage >= totalPages;
+}
+
+document.querySelectorAll('#alertFilters .chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    // clicking the active chip clears the filter — no "All" chip needed
+    const clearing = btn.classList.contains('active');
+    document.querySelectorAll('#alertFilters .chip').forEach(b => b.classList.remove('active'));
+    if (!clearing) btn.classList.add('active');
+    currentAlertFilter = clearing ? 'all' : btn.dataset.af;
+    currentAlertPage = 1;
+    renderAlerts();
+  });
+});
+
+function summaryStatusClass(s){
+  return s === 'Continuing' ? 'status-continuing' : (s === 'To Be Advised' ? 'status-tba' : 'status-discontinued');
+}
+
+// Product Status Summary is a glance-able summary, not a third copy of the item list:
+// three counts, the split, and a click through to the full table below.
+function renderStatusSummary(){
+  const total = inventoryData.length;
+  const tiers = [
+    {status:'Continuing',    cls:'st-continuing',    color:'#12864B', note:'active and sellable'},
+    {status:'Discontinued',  cls:'st-discontinued',  color:'#E60012', note:'should no longer be sold'},
+    {status:'To Be Advised', cls:'st-tba',           color:'#E39A0C', note:'status not yet confirmed'}
+  ];
+
+  document.getElementById('statusTiles').innerHTML = tiers.map(t => {
+    const items = inventoryData.filter(i => i.status === t.status);
+    const pct = items.length / total * 100;
+    const value = items.reduce((s, i) => s + (i.price || 0), 0);
+    return `<button class="status-tile ${t.cls}" data-status="${t.status}" title="${t.status} — ${t.note}. Click to show only these items in the table below.">
+      <span class="st-count">${items.length.toLocaleString()}</span>
+      <span class="st-mid">
+        <span class="st-label">${t.status}</span>
+        <div class="st-sub">${pct.toFixed(1)}% of catalogue · ฿${(value/1e6).toFixed(1)}M list value</div>
+      </span>
+      <span class="st-go">Filter →</span>
+    </button>`;
+  }).join('');
+
+  document.getElementById('statusStack').innerHTML = tiers.map(t => {
+    const pct = inventoryData.filter(i => i.status === t.status).length / total * 100;
+    return `<i style="width:${pct}%;background:${t.color};" title="${t.status} ${pct.toFixed(1)}%"></i>`;
+  }).join('');
+
+  const inactive = AGG.status_totals['Discontinued'] + AGG.status_totals['To Be Advised'];
+  document.getElementById('statusCounts').innerHTML =
+    `${total.toLocaleString()} items in the item master. <b>${AGG.mismatch_count}</b> of the ${inactive.toLocaleString()} ` +
+    `Discontinued / To Be Advised items still received orders in the last 6 months — those are the ones listed in Real-Time Alerts &amp; Action Items above.`;
+
+  document.querySelectorAll('#statusTiles .status-tile').forEach(btn => {
+    btn.addEventListener('click', () => setInventoryStatus(btn.dataset.status));
+  });
+}
+
+// ============ REORDER ALERTS ============
+let currentReorderFilter = 'all';
+let currentReorderPage = 1;
+let reorderPageSize = 20;
+
+function changeReorderPage(direction){
+  currentReorderPage += direction;
+  renderReorders(currentReorderFilter);
+}
+
+function changeReorderPageSize(){
+  reorderPageSize = parseInt(document.getElementById('reorderPageSizeSelect').value);
+  currentReorderPage = 1;
+  renderReorders(currentReorderFilter);
+}
+
+// Only customers who are still buying: last order within 12 months and no more than
+// 5x past their normal cycle. Anything beyond that has stopped buying, not "due".
+const REORDER_MAX_DAYS = 365;
+const REORDER_MAX_PROGRESS = 500;
+const reorderBase = reorderData.filter(r => r.daysSince <= REORDER_MAX_DAYS && r.progressPct <= REORDER_MAX_PROGRESS);
+// Estimated value uses the realised End User discount, not full list price
+const REORDER_DISCOUNT = AGG.discount_enduser_pct / 100;
+const netEst = r => Math.round(r.estValue * (1 - REORDER_DISCOUNT));
+// estValue was built as (average units per order) x (list price), so dividing it back out
+// recovers the quantity the next order is expected to be — the number the warehouse needs.
+const priceById = {};
+inventoryData.forEach(i => { priceById[i.id] = i.price; });
+const estUnits = r => {
+  const p = priceById[r.itemId];
+  return p ? Math.max(1, Math.round(r.estValue / p)) : null;
+};
+
+function renderReorders(filter){
+  currentReorderFilter = filter;
+  const list = document.getElementById('reorderList');
+  list.innerHTML = '';
+
+  const filtered = reorderBase
+    .filter(r => filter === 'all' || r.status === filter)
+    .slice()
+    .sort((a, b) => b.estValue - a.estValue);
+
+  const overdueCount = reorderBase.filter(r => r.status === 'Overdue').length;
+  const approachingCount = reorderBase.filter(r => r.status === 'Approaching Reorder').length;
+  const expectedCount = reorderBase.filter(r => r.status === 'Expected Now').length;
+  const totalValue = reorderBase.reduce((s, r) => s + netEst(r), 0);
+  const totalUnits = reorderBase.reduce((s, r) => s + (estUnits(r) || 0), 0);
+  document.getElementById('reorderCounts').innerHTML =
+    `<b>${reorderBase.length.toLocaleString()}</b> customer-product pairs to follow up — ` +
+    `<b>${approachingCount.toLocaleString()}</b> Approaching, <b>${expectedCount.toLocaleString()}</b> Expected Now, ` +
+    `<b>${overdueCount.toLocaleString()}</b> Overdue · <b>฿${(totalValue/1e6).toFixed(0)}M</b> and ` +
+    `<b>${totalUnits.toLocaleString()} units</b> of orders in play`;
+
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / reorderPageSize) || 1;
+  if (currentReorderPage > totalPages) currentReorderPage = totalPages;
+  if (currentReorderPage < 1) currentReorderPage = 1;
+
+  const startIndex = (currentReorderPage - 1) * reorderPageSize;
+  const endIndex = Math.min(startIndex + reorderPageSize, totalItems);
+  const pageItems = filtered.slice(startIndex, endIndex);
+
+  if (pageItems.length === 0) {
+    list.innerHTML = `<div style="text-align:center;color:var(--ink-2);padding:20px;">No reorder alerts for this filter.</div>`;
+  } else {
+    const maxVal = Math.max(...filtered.map(r => r.estValue), 1);
+    // typical (median) gap between orders — the same basis the status badge uses
+    const typicalCycle = r => Math.max(1, Math.round(r.daysSince / (r.progressPct / 100)));
+    const statusSuffix = {'Overdue':'overdue','Approaching Reorder':'approaching','Expected Now':'expected'};
+    const statusLabel = {'Overdue':'Overdue','Approaching Reorder':'Approaching','Expected Now':'Expected Now'};
+    const barColor = {'Overdue':'#E60012','Approaching Reorder':'#E39A0C','Expected Now':'#12864B'};
+    pageItems.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'alert-row';
+      row.innerHTML = `
+        <div class="circ" style="background:${circColor(r.cat1)};">${initials(r.cat1)}</div>
+        <div class="alert-mid">
+          <div class="alert-name">${r.itemCode} — ${r.custName}</div>
+          <div class="alert-cat">${r.cat1} · last ordered ${r.daysSince} days ago · usually every ${typicalCycle(r)} days</div>
+        </div>
+        <div><span class="bar"><i style="width:${Math.round(r.estValue / maxVal * 100)}%;background:${barColor[r.status]};"></i></span></div>
+        <div><span class="badge-reorder badge-reorder-${statusSuffix[r.status]}">${statusLabel[r.status]}${r.status==='Overdue' ? ` <span class="pct">${Math.round(r.progressPct)}%</span>` : ''}</span></div>
+        <div class="alert-loss" title="Average order quantity x list price, less the ${AGG.discount_enduser_pct}% average End User discount">฿${netEst(r).toLocaleString()} est.${estUnits(r) ? `<span class="alert-units">≈ ${estUnits(r).toLocaleString()} unit${estUnits(r) > 1 ? 's' : ''}</span>` : ''}</div>`;
+      list.appendChild(row);
+    });
+  }
+
+  document.getElementById('reorderRecordInfo').innerText = totalItems > 0
+    ? `Showing ${startIndex + 1}–${endIndex} of ${totalItems.toLocaleString()}`
+    : `Showing 0 items`;
+  document.getElementById('reorderPageInfo').innerText = `Page ${currentReorderPage} of ${totalPages}`;
+  document.getElementById('reorderPrevBtn').disabled = currentReorderPage === 1;
+  document.getElementById('reorderNextBtn').disabled = currentReorderPage >= totalPages;
+}
+
+document.querySelectorAll('#reorderFilters .chip').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('#reorderFilters .chip').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentReorderPage = 1;
+    renderReorders(btn.dataset.rf);
+  });
+});
+
+// ============ FREQUENTLY BOUGHT TOGETHER ============
+let currentFbtPage = 1;
+let fbtPageSize = 10;
+let fbtSearchTerm = '';
+let fbtCategoryFilter = 'all';
+let fbtStrengthFilter = 'all';
+
+// The badge is decided by ONE number: of all the orders that contained the stronger
+// item, what share also contained the other one. Two pairs can both show "5 shared
+// orders" and still land in different tiers, because the tier is a share, not a count.
+function fbtStrength(p){
+  const conf = Math.max(p.confAB, p.confBA);
+  if (conf >= 1)    return {tier:'vstrong',  label:'Always together'};
+  if (conf >= 0.75) return {tier:'strong',   label:'Usually together'};
+  if (conf >= 0.6)  return {tier:'moderate', label:'Often together'};
+  return {tier:'notable', label:'Sometimes together'};
+}
+
+function initFbtCategoryFilters(){
+  const counts = {};
+  coOrderingPairs.forEach(p => {
+    counts[p.aCat] = (counts[p.aCat]||0) + 1;
+    counts[p.bCat] = (counts[p.bCat]||0) + 1;
+  });
+  const cats = Object.keys(counts).sort((a,b) => counts[b]-counts[a]);
+  const wrap = document.getElementById('fbtCategoryFilters');
+  wrap.innerHTML = cats.map(c =>
+    `<button class="chip" data-fc="${c}" title="Click to filter, click again to clear">${c}</button>`).join('');
+  wrap.querySelectorAll('.chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      // clicking the active chip clears the filter — no "All" chip needed
+      const clearing = btn.classList.contains('active');
+      wrap.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
+      if (!clearing) btn.classList.add('active');
+      fbtCategoryFilter = clearing ? 'all' : btn.dataset.fc;
+      currentFbtPage = 1;
+      renderFbt();
+    });
+  });
+
+  initFbtStrengthFilters();
+}
+
+// Strength chips work together with the category chips: pick iQSS + Always together
+// and the list shows only iQSS pairs that are always bought together.
+function initFbtStrengthFilters(){
+  const tiers = [
+    {key:'vstrong',  label:'Always together'},
+    {key:'strong',   label:'Usually together'},
+    {key:'moderate', label:'Often together'},
+    {key:'notable',  label:'Sometimes together'}
+  ];
+  const wrap = document.getElementById('fbtStrengthFilters');
+  wrap.innerHTML = tiers.map(t =>
+    `<button class="chip" data-fs="${t.key}" title="Click to filter, click again to clear">${t.label}</button>`).join('');
+  wrap.querySelectorAll('.chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const clearing = btn.classList.contains('active');
+      wrap.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
+      if (!clearing) btn.classList.add('active');
+      fbtStrengthFilter = clearing ? 'all' : btn.dataset.fs;
+      currentFbtPage = 1;
+      renderFbt();
+    });
+  });
+}
+
+function onFbtSearchInput(){
+  fbtSearchTerm = document.getElementById('fbtSearch').value.trim().toLowerCase();
+  currentFbtPage = 1;
+  renderFbt();
+}
+
+function changeFbtPage(direction){
+  currentFbtPage += direction;
+  renderFbt();
+}
+
+function changeFbtPageSize(){
+  fbtPageSize = parseInt(document.getElementById('fbtPageSizeSelect').value);
+  currentFbtPage = 1;
+  renderFbt();
+}
+
+function renderFbt(){
+  const list = document.getElementById('fbtList');
+  list.innerHTML = '';
+
+  let filtered = coOrderingPairs.slice();
+
+  if (fbtStrengthFilter !== 'all') {
+    filtered = filtered.filter(p => fbtStrength(p).tier === fbtStrengthFilter);
+  }
+  if (fbtCategoryFilter !== 'all') {
+    filtered = filtered.filter(p => p.aCat === fbtCategoryFilter || p.bCat === fbtCategoryFilter);
+  }
+  if (fbtSearchTerm) {
+    filtered = filtered.filter(p =>
+      p.aCode.toLowerCase().includes(fbtSearchTerm) ||
+      p.bCode.toLowerCase().includes(fbtSearchTerm) ||
+      p.aCat.toLowerCase().includes(fbtSearchTerm) ||
+      p.bCat.toLowerCase().includes(fbtSearchTerm)
+    );
+  }
+
+  // Rank by how often the pair actually shows up AND how consistent the link is,
+  // so a 27x pair at 80% outranks a 5x pair at 100%. (Lift is not shown: with items
+  // this rare it produces numbers in the thousands that mean nothing to a reader.)
+  const fbtScore = p => p.coOcc * Math.max(p.confAB, p.confBA);
+  const sorted = filtered.sort((a, b) => fbtScore(b) - fbtScore(a));
+  const totalItems = sorted.length;
+  const totalPages = Math.ceil(totalItems / fbtPageSize) || 1;
+  if (currentFbtPage > totalPages) currentFbtPage = totalPages;
+  if (currentFbtPage < 1) currentFbtPage = 1;
+
+  const startIndex = (currentFbtPage - 1) * fbtPageSize;
+  const endIndex = Math.min(startIndex + fbtPageSize, totalItems);
+  const pageItems = sorted.slice(startIndex, endIndex);
+
+  if (pageItems.length === 0) {
+    list.innerHTML = `<div style="text-align:center;color:var(--ink-2);padding:26px;">No product pairs match this combination of filters.</div>`;
+  } else {
+    const grid = document.createElement('div');
+    grid.className = 'fbt-grid';
+    pageItems.forEach(p => {
+      const s = fbtStrength(p);
+      // lead with whichever direction is the stronger, more actionable signal
+      const aToB = p.confAB >= p.confBA;
+      const leadCode = aToB ? p.aCode : p.bCode;
+      const followCode = aToB ? p.bCode : p.aCode;
+      const leadPct = Math.round((aToB ? p.confAB : p.confBA) * 100);
+      const otherPct = Math.round((aToB ? p.confBA : p.confAB) * 100);
+      // how many orders each item appeared in at all — this is what the share is out of
+      const leadOrders = Math.round(p.coOcc / (aToB ? p.confAB : p.confBA));
+      const followOrders = Math.round(p.coOcc / (aToB ? p.confBA : p.confAB));
+
+      const card = document.createElement('div');
+      card.className = 'fbt-card';
+      card.innerHTML = `
+        <div class="fbt-card-top">
+          <span class="fbt-strength fbt-strength-${s.tier}" title="${leadPct}% of the ${leadOrders} orders that contained ${leadCode} also contained ${followCode}. The label follows this share, not the number of orders.">${s.label} · ${leadPct}%</span>
+          <span class="fbt-cooc" title="Orders that contained both items">🛒 <b>${p.coOcc}</b> shared orders</span>
+        </div>
+        <div class="fbt-pairing">
+          <div class="fbt-item">
+            <div class="fbt-item-code">${p.aCode}</div>
+            <div class="fbt-item-cat">${p.aCat}</div>
+          </div>
+          <div class="fbt-plus">+</div>
+          <div class="fbt-item">
+            <div class="fbt-item-code">${p.bCode}</div>
+            <div class="fbt-item-cat">${p.bCat}</div>
+          </div>
+        </div>
+        <div class="fbt-insight" title="${leadCode} was on ${leadOrders} sales orders between Apr 2021 and Mar 2025, and ${p.coOcc} of them also had ${followCode}. The other way round: ${p.coOcc} of the ${followOrders} orders containing ${followCode} also had ${leadCode} (${otherPct}%).">
+          <div class="fbt-conf-bar"><i style="width:${leadPct}%;"></i></div>
+          <div>Selling <b>${leadCode}</b>? Offer <b>${followCode}</b> — on <b>${leadPct}%</b> of ${leadCode} orders <span class="fbt-insight-sub">(${p.coOcc} of ${leadOrders})</span></div>
+        </div>`;
+      grid.appendChild(card);
+    });
+    list.appendChild(grid);
+  }
+
+  document.getElementById('fbtRecordInfo').innerText = totalItems > 0
+    ? `Showing ${startIndex + 1}–${endIndex} of ${totalItems.toLocaleString()}`
+    : `Showing 0 items`;
+  document.getElementById('fbtPageInfo').innerText = `Page ${currentFbtPage} of ${totalPages}`;
+  document.getElementById('fbtPrevBtn').disabled = currentFbtPage === 1;
+  document.getElementById('fbtNextBtn').disabled = currentFbtPage >= totalPages;
+}
+
+// ============ TOP CUSTOMERS / RFM ============
+let currentCustPage = 1;
+let custPageSize = 20;
+let currentCustSegment = 'all';
+let currentCustSearch = '';
+
+// The raw RFM logic produces eight segments, but five of them together hold barely 1%
+// of revenue — too many labels for a reader to carry. They are rolled up into five
+// groups named after the action they call for. The underlying data is untouched.
+const segmentGroupOf = {
+  'Champions':        'Best Customers',
+  'Loyal Customers':  'Regular Customers',
+  "Can't Lose Them":  'At Risk',
+  'At Risk':          'At Risk',
+  'Need Attention':   'At Risk',
+  'New Customers':    'New & Growing',
+  'Promising':        'New & Growing',
+  'Hibernating':      'Inactive'
+};
+
+// Ordered from healthiest to dormant, matching the legend above the table.
+const segmentColors = {
+  'Best Customers':    { bg:'#E7F5EC', text:'#12864B' }, // green
+  'Regular Customers': { bg:'#E9F0FC', text:'#1E5AC8' }, // blue
+  'New & Growing':     { bg:'#EEEAFB', text:'#5B4BC4' }, // purple
+  'At Risk':           { bg:'#FDECEE', text:'#A8000D' }, // red
+  'Inactive':          { bg:'#EEF0F2', text:'#5A6068' }  // gray
+};
+
+function changeCustPage(direction){
+  currentCustPage += direction;
+  renderCustomers(currentCustSegment);
+}
+
+function changeCustPageSize(){
+  custPageSize = parseInt(document.getElementById('custPageSizeSelect').value);
+  currentCustPage = 1;
+  renderCustomers(currentCustSegment);
+}
+
+function onCustomerSearchInput(){
+  currentCustSearch = document.getElementById('customerSearch').value.trim().toLowerCase();
+  currentCustPage = 1;
+  renderCustomers(currentCustSegment);
+}
+
+function renderCustomers(segment){
+  currentCustSegment = segment;
+  const body = document.getElementById('customerBody');
+  body.innerHTML = '';
+
+  const filtered = customerData
+    .filter(c => segment === 'all' || segmentGroupOf[c.segment] === segment)
+    .filter(c => !currentCustSearch || c.name.toLowerCase().includes(currentCustSearch) || c.industry.toLowerCase().includes(currentCustSearch))
+    .slice()
+    .sort((a, b) => b.revenue - a.revenue);
+
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / custPageSize) || 1;
+  if (currentCustPage > totalPages) currentCustPage = totalPages;
+  if (currentCustPage < 1) currentCustPage = 1;
+
+  const startIndex = (currentCustPage - 1) * custPageSize;
+  const endIndex = Math.min(startIndex + custPageSize, totalItems);
+  const items = filtered.slice(startIndex, endIndex);
+
+  if (items.length === 0) {
+    body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--ink-2);padding:20px;">No customers match this filter.</td></tr>`;
+  } else {
+    items.forEach(c => {
+      const tr = document.createElement('tr');
+      const group = segmentGroupOf[c.segment] || c.segment;
+      const color = segmentColors[group] || { bg:'var(--gray-bg)', text:'var(--gray)' };
+      tr.innerHTML = `
+        <td><b>${c.name}</b></td>
+        <td class="cat">${c.type}</td>
+        <td class="cat">${c.industry}</td>
+        <td class="rev">฿${Number(c.revenue).toLocaleString()}</td>
+        <td class="rev">${(QTY.units_by_cust[c.id] || 0).toLocaleString()}</td>
+        <td>${c.orders.toLocaleString()}</td>
+        <td>${c.productsOverdue.toLocaleString()}</td>
+        <td><span class="badge-segment" style="background:${color.bg};color:${color.text};">${group}</span></td>`;
+      body.appendChild(tr);
+    });
+  }
+
+  document.getElementById('custRecordInfo').innerText = totalItems > 0
+    ? `Showing ${startIndex + 1}–${endIndex} of ${totalItems.toLocaleString()}`
+    : `Showing 0 items`;
+  document.getElementById('custPageInfo').innerText = `Page ${currentCustPage} of ${totalPages}`;
+  document.getElementById('custPrevBtn').disabled = currentCustPage === 1;
+  document.getElementById('custNextBtn').disabled = currentCustPage >= totalPages;
+}
+
+document.querySelectorAll('#segmentFilters .chip').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('#segmentFilters .chip').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCustPage = 1;
+    renderCustomers(btn.dataset.seg);
+  });
+});
+
+// ============ CHARTS ============
+function tinySpark(id, values, color){
+  new Chart(document.getElementById(id), {
+    type:'line',
+    data:{labels:values.map((_,i)=>i),datasets:[{data:values,borderColor:color,borderWidth:1.5,pointRadius:0,tension:.35,fill:false}]},
+    options:{responsive:false,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{enabled:false},
+        filler:{propagate:false}
+      },
+      scales:{x:{display:false},y:{display:false}},
+      elements:{line:{borderCapStyle:'round'}},
+      layout:{padding:{top:4,bottom:4,left:4,right:4}}
+    }
+  });
+}
+
+function buildSparklines(){
+  const recentRevenue = AGG.monthly_values_m.slice(-7);
+  tinySpark('spark1', recentRevenue, '#E60012');
+  tinySpark('spark2', recentRevenue, '#E60012');
+  tinySpark('spark3', QTY.monthly_units.slice(-7), '#1E5AC8');
+  // the inventory cards have no historical series in the source data, so they carry no sparkline
+}
+
+let qMetric = 'rev';
+
+function buildCharts(){
+  // Fiscal quarters (Apr–Mar) for every fiscal year in the data, from the same actual
+  // monthly sales-order figures used everywhere else. Fiscal years are named by their
+  // STARTING year: FY21 = Apr 2021 – Mar 2022.  Two metrics: baht booked, and units shipped.
+  const isQty = qMetric === 'qty';
+  const months = isQty ? QTY.monthly_units : AGG.monthly_values_m;
+  const fyCount = Math.floor(months.length / 12);
+  const quarterLabels = ['Q1 (Apr-Jun)', 'Q2 (Jul-Sep)', 'Q3 (Oct-Dec)', 'Q4 (Jan-Mar)'];
+  const firstFyStart = parseInt(AGG.fy_labels[0].replace(/[^0-9]/g, '').slice(0, 2), 10); // FY21/22 -> 21
+  // one colour per fiscal year
+  const yearColors = ['#E8871A', '#9AA1A9', '#E60012', '#22262B'];   // FY21 orange, FY22 grey, FY23 red, FY24 black
+
+  const progressData = [];
+  for (let k = 0; k < fyCount; k++) {
+    const base = k * 12;
+    const quarters = [0, 1, 2, 3].map(q => {
+      const v = months.slice(base + q * 3, base + q * 3 + 3).reduce((a, b) => a + b, 0);
+      return isQty ? Math.round(v) : Math.round(v * 100) / 100;
+    });
+    progressData.push({
+      x: quarterLabels,
+      y: quarters,
+      name: 'FY' + String(firstFyStart + k).padStart(2, '0'),
+      type: 'bar',
+      marker: { color: yearColors[k % yearColors.length] },
+      hovertemplate: isQty
+        ? '%{x}<br>%{fullData.name}: %{y:,.0f} units<extra></extra>'
+        : '%{x}<br>%{fullData.name}: ฿%{y:.1f}M<extra></extra>'
+    });
+  }
+
+  const lastFy = 'FY' + String(firstFyStart + fyCount - 1).padStart(2, '0');
+  document.getElementById('qTitle').textContent = isQty ? 'Quarterly Units Shipped' : 'Quarterly Revenue';
+  document.getElementById('progressChartSub').textContent = isQty
+    ? `Actual units shipped per fiscal quarter, FY21–${lastFy} (FY21 = Apr 2021 – Mar 2022)`
+    : `Actual fiscal-quarter revenue, FY21–${lastFy} (FY21 = Apr 2021 – Mar 2022)`;
+
+  const progressLayout = {
+    title: '',
+    barmode: 'group',
+    bargap: 0.28,
+    bargroupgap: 0.08,
+    xaxis: { title: '', tickangle: 0, tickfont: { size: 10 }, showgrid: false, linecolor: '#DFE3E8' },
+    yaxis: { title: { text: isQty ? 'Units' : 'Million THB', font: { size: 10 } }, gridcolor: '#EDEFF2', zeroline: false },
+    plot_bgcolor: '#FFFFFF',
+    paper_bgcolor: '#FFFFFF',
+    font: { family: "Roboto, Helvetica, Arial, sans-serif", size: 11, color: '#5A6068' },
+    margin: { l: 55, r: 20, t: 34, b: 44 },
+    legend: { x: 0, y: 1.16, orientation: 'h', font: { size: 10.5 } }
+  };
+
+  Plotly.newPlot('progress_chart', progressData, progressLayout, { responsive: true, displayModeBar: false });
+}
+
+document.querySelectorAll('#qMetric .chip').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if (btn.dataset.q === qMetric) return;
+    document.querySelectorAll('#qMetric .chip').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    qMetric = btn.dataset.q;
+    buildCharts();
+  });
+});
+
+
+// ============ LSTM FORECAST (trained offline in NumPy on the same sales data) ============
+const LSTM_OUT = /*{{LSTM_OUT}}*/;
+
+// Two parallel forecasts on the same 209 weeks: revenue in baht, and volume in units.
+// Same four models, same hold-out year, same scoring — only the target differs.
+let fcMetric = 'rev';
+
+function buildLstm(){
+  // one entry per model — colour + line style shared by both charts and the legend
+  const MODELS = [
+    { key:'Ensemble', color:'#C2185B', dash:'dashdot', w:2.8 },
+    { key:'SARIMA',   color:'#1E5AC8', dash:'dot'  },
+    { key:'XGBoost',  color:'#C2540C', dash:'dot'  },
+    { key:'LSTM',     color:'#5B4BC4', dash:'dash' },
+    { key:'LightGBM', color:'#0E8074', dash:'dash' }
+  ];
+  const sum = a => a.reduce((x, y) => x + y, 0);
+  const mm = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const label = s => { const [y, m] = s.split('-'); return mm[+m - 1] + " '" + y.slice(2); };
+
+  const isQty  = fcMetric === 'qty';
+  const OUT    = isQty ? QTY_OUT : LSTM_OUT;
+  const histV  = (isQty ? QTY.monthly_units : AGG.monthly_values_m).slice(-24);
+  const axis   = isQty ? 'Units' : '฿M';
+  // year totals: baht shown in billions, units shown as a plain count
+  const fmtYear  = v => isQty ? Math.round(v).toLocaleString() + ' units' : '฿' + (v/1000).toFixed(2) + 'B';
+  const fmtMonth = v => isQty ? Math.round(v).toLocaleString() : '฿' + v.toFixed(1) + 'M';
+
+  document.getElementById('fcTitle').textContent = isQty ? 'AI Demand Forecast (Units)' : 'AI Revenue Forecast';
+  document.getElementById('fcBtHead').textContent = isQty
+    ? 'Backtest — predicted vs actual units, Apr 2024 – Mar 2025'
+    : 'Backtest — predicted vs actual, Apr 2024 – Mar 2025';
+
+  const hist = AGG.monthly_labels.slice(-24);
+  const fLabels = OUT.forecast_labels.map(label);
+  const x = hist.concat(fLabels);
+  const joinAt = new Array(histV.length - 1).fill(null).concat([histV[histV.length - 1]]);
+
+  const best = OUT.models[MODELS.map(m => m.key)
+    .reduce((a, b) => OUT.models[a].mape <= OUT.models[b].mape ? a : b)];
+  const lo = Math.min(...MODELS.map(m => sum(OUT.models[m.key].forecast_values_m)));
+  const hi = Math.max(...MODELS.map(m => sum(OUT.models[m.key].forecast_values_m)));
+  document.getElementById('lstmHeadline').innerHTML =
+    `Five models, one protocol — FY25 ${isQty ? 'demand' : 'revenue'} lands between <b>${fmtYear(lo)}</b> and ` +
+    `<b>${fmtYear(hi)}</b> against FY24 actual ${fmtYear(OUT.fy24_actual_m)}. ` +
+    `<span style="color:var(--ink-3);">On the held-out year the most accurate was off by ` +
+    `${best.mape.toFixed(1)}% a month — read these as a direction, not a plan number.</span>`;
+
+  Plotly.newPlot('lstm_chart',
+    [{ x, y: histV.concat(new Array(fLabels.length).fill(null)), type:'scatter', mode:'lines',
+       name:'Actual', line:{color:'#22262B', width:2}, fill:'tozeroy', fillcolor:'rgba(34,38,43,0.07)' }]
+    .concat(MODELS.map(m => ({
+      x, y: joinAt.concat(OUT.models[m.key].forecast_values_m),
+      type:'scatter', mode:'lines',
+      name:`${m.key} · ${fmtYear(sum(OUT.models[m.key].forecast_values_m))}`,
+      line:{color:m.color, width:m.w || 1.9, dash:m.dash}
+    }))), {
+    xaxis:{tickangle:-90, tickfont:{size:8.5}, showgrid:false, linecolor:'#DFE3E8'},
+    yaxis:{title:{text:axis, font:{size:10}}, gridcolor:'#EDEFF2', zeroline:false},
+    plot_bgcolor:'#FFFFFF', paper_bgcolor:'#FFFFFF',
+    font:{family:'Roboto, Helvetica, Arial, sans-serif', size:11, color:'#5A6068'},
+    margin:{l:55, r:20, t:30, b:60}, hovermode:'x unified',
+    legend:{x:0, y:1.13, orientation:'h', font:{size:10}}
+  }, {responsive:true, displayModeBar:false});
+
+  const bl = OUT.backtest_labels.map(label);
+  Plotly.newPlot('lstm_backtest',
+    [{ x: bl, y: OUT.backtest_actual_monthly, type:'bar', name:'Actual', marker:{color:'#22262B'} }]
+    .concat(MODELS.map(m => ({
+      x: bl, y: OUT.models[m.key].backtest_pred_monthly, type:'scatter', mode:'lines+markers',
+      name:`${m.key} · off ${OUT.models[m.key].mape.toFixed(1)}%`,
+      line:{color:m.color, width:m.w || 1.9, dash:m.dash}, marker:{size:m.w ? 5 : 4}
+    }))), {
+    barmode:'group', bargap:0.45,
+    xaxis:{tickangle:-90, tickfont:{size:8.5}, showgrid:false, linecolor:'#DFE3E8'},
+    yaxis:{title:{text:axis, font:{size:10}}, gridcolor:'#EDEFF2', zeroline:false},
+    plot_bgcolor:'#FFFFFF', paper_bgcolor:'#FFFFFF',
+    font:{family:'Roboto, Helvetica, Arial, sans-serif', size:10.5, color:'#5A6068'},
+    margin:{l:50, r:15, t:28, b:55},
+    legend:{x:0, y:1.16, orientation:'h', font:{size:10}}
+  }, {responsive:true, displayModeBar:false});
+}
+
+document.querySelectorAll('#fcMetric .chip').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if (btn.dataset.fc === fcMetric) return;
+    document.querySelectorAll('#fcMetric .chip').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    fcMetric = btn.dataset.fc;
+    buildLstm();
+  });
+});
+
+function formatMoneyM(valueM){
+  if (Math.abs(valueM) >= 1000) return '฿' + (valueM/1000).toFixed(2) + 'B';
+  return '฿' + valueM.toFixed(1) + 'M';
+}
+
+function setTag(id, text, cls){
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'tag ' + cls;
+}
+function setBar(id, pct, color){
+  const el = document.getElementById(id);
+  el.style.width = Math.max(0, Math.min(100, pct)).toFixed(1) + '%';
+  el.style.background = color;
+}
+
+function fillPeriod(){
+  const L = AGG.monthly_labels, span = L[0] + ' – ' + L[L.length - 1];
+  document.getElementById('topbarSpan').textContent =
+    AGG.fy_labels[0].slice(0, 4) + ' – ' + AGG.fy_labels[AGG.fy_labels.length - 1].slice(0, 4);
+  document.getElementById('topbarRange').textContent = '(' + span + ')';
+  document.getElementById('topbarCounts').textContent =
+    AGG.order_lines.toLocaleString() + ' sales order lines · ' + QTY.total_units.toLocaleString() + ' units';
+  document.getElementById('footerRange').textContent = '(' + span + ')';
+  document.querySelectorAll('.period').forEach(e => e.textContent = span);
+  document.querySelectorAll('.nmonths').forEach(e => e.textContent = L.length);
+}
+
+function updateKpis(){
+  const totalItems = inventoryData.length;
+  const activeItems = inventoryData.filter(i => i.status === 'Continuing').length;
+  const catCount = new Set(inventoryData.map(i => i.cat1)).size;
+  const growthSign = AGG.yoy_growth_pct >= 0 ? '▲' : '▼';
+  const growthUp = AGG.yoy_growth_pct >= 0;
+
+  const fy = AGG.fy_values_m;
+  const latestFy = fy[fy.length - 1];
+  const bestFy = Math.max(...fy);
+  const shortFy = l => 'FY' + String(l).replace(/[^0-9]/g, '').slice(0, 2);   // FY22/23 -> FY22
+  const bestFyLabel = shortFy(AGG.fy_labels[fy.indexOf(bestFy)]);
+  const latestFyLabel = shortFy(AGG.fy_labels[fy.length - 1]);
+  const fyPct = latestFy / bestFy * 100;
+
+  const months = AGG.monthly_values_m;
+  const lastMonth = months[months.length - 1];
+  const bestMonth = Math.max(...months);
+  const monthPct = lastMonth / bestMonth * 100;
+
+  const activePct = activeItems / totalItems * 100;
+
+  // 1 — Total revenue
+  document.getElementById('kpiRevenue').textContent = formatMoneyM(AGG.total_revenue_m);
+  document.getElementById('kpiRevenueSub').textContent = `/ ${shortFy(AGG.fy_labels[0])}–${latestFyLabel}`;
+  document.getElementById('kpiRevenueNote').textContent =
+    `${fyPct.toFixed(0)}% of best year (${bestFyLabel})`;
+  setBar('kpiRevenueBar', fyPct, fyPct >= 90 ? '#12864B' : (fyPct >= 70 ? '#E39A0C' : '#E60012'));
+  setTag('kpiRevenueTrend', `${growthSign} ${Math.abs(AGG.yoy_growth_pct)}% YoY`, growthUp ? 'tag-ok' : 'tag-bad');
+
+  // 2 — Average monthly revenue
+  document.getElementById('kpiMonthly').textContent = formatMoneyM(AGG.avg_monthly_revenue_m);
+  document.getElementById('kpiMonthlySub').textContent = `/ ${months.length} months avg`;
+  document.getElementById('kpiMonthlyNote').textContent =
+    `Last month ${formatMoneyM(lastMonth)}`;
+  document.getElementById('kpiMonthlyBar').parentElement.title =
+    `Last month ${formatMoneyM(lastMonth)} = ${monthPct.toFixed(0)}% of the peak month (${formatMoneyM(bestMonth)})`;
+  setBar('kpiMonthlyBar', monthPct, monthPct >= 90 ? '#12864B' : (monthPct >= 70 ? '#E39A0C' : '#E60012'));
+  const sameMonthLastYear = months.length > 12 ? months[months.length - 13] : null;
+  const smlyPct = sameMonthLastYear ? (lastMonth / sameMonthLastYear - 1) * 100 : 0;
+  const lastLabel = AGG.monthly_labels[AGG.monthly_labels.length - 1];
+  const prevLabel = AGG.monthly_labels[AGG.monthly_labels.length - 13];
+  setTag('kpiMonthlyTrend',
+    `${smlyPct >= 0 ? '▲' : '▼'} ${Math.abs(smlyPct).toFixed(1)}% vs ${prevLabel.replace(/'/g, "'")}`,
+    smlyPct >= 0 ? 'tag-ok' : 'tag-bad');
+  document.getElementById('kpiMonthly').parentElement.title =
+    `${lastLabel} ${formatMoneyM(lastMonth)} vs ${prevLabel} ${formatMoneyM(sameMonthLastYear)}`;
+
+  // 3 — Total units sold (volume, not baht)
+  const fyU = QTY.fy_units;
+  const latestFyU = fyU[fyU.length - 1];
+  const bestFyU = Math.max(...fyU);
+  const bestFyULabel = shortFy(AGG.fy_labels[fyU.indexOf(bestFyU)]);
+  const fyUPct = latestFyU / bestFyU * 100;
+  const unitsUp = QTY.yoy_units_pct >= 0;
+  document.getElementById('kpiUnits').textContent = QTY.total_units.toLocaleString();
+  document.getElementById('kpiUnitsSub').textContent = `/ ${shortFy(AGG.fy_labels[0])}–${latestFyLabel}`;
+  document.getElementById('kpiUnitsNote').textContent =
+    `${Math.round(QTY.avg_monthly_units).toLocaleString()} units/month avg`;
+  document.getElementById('kpiUnits').parentElement.title =
+    `${latestFyLabel} ${latestFyU.toLocaleString()} units = ${fyUPct.toFixed(0)}% of the best year (${bestFyULabel} ${bestFyU.toLocaleString()} units)`;
+  setBar('kpiUnitsBar', fyUPct, fyUPct >= 90 ? '#12864B' : (fyUPct >= 70 ? '#E39A0C' : '#E60012'));
+  setTag('kpiUnitsTrend', `${unitsUp ? '▲' : '▼'} ${Math.abs(QTY.yoy_units_pct)}% YoY`, unitsUp ? 'tag-ok' : 'tag-bad');
+
+  // 4 — Total inventory items
+  document.getElementById('kpiInventory').textContent = totalItems.toLocaleString();
+  document.getElementById('kpiInventorySub').textContent = `/ ${catCount} categories`;
+  document.getElementById('kpiInventoryNote').textContent =
+    `${AGG.mismatch_count} sold while inactive`;
+  const pCont = AGG.status_totals['Continuing'] / totalItems * 100;
+  const pDisc = AGG.status_totals['Discontinued'] / totalItems * 100;
+  const invBar = document.getElementById('kpiInventoryBar');
+  invBar.style.width = '100%';
+  invBar.style.background =
+    `linear-gradient(90deg,#12864B 0 ${pCont}%,#E60012 ${pCont}% ${pCont + pDisc}%,#E39A0C ${pCont + pDisc}% 100%)`;
+  setTag('kpiInventoryTrend', `⚠ ${AGG.mismatch_count} mismatches`, 'tag-bad');
+
+  // 5 — Active products
+  document.getElementById('kpiActive').textContent = activeItems.toLocaleString();
+  document.getElementById('kpiActiveSub').textContent = `/ ${totalItems.toLocaleString()} items`;
+  document.getElementById('kpiActiveNote').textContent =
+    `${AGG.status_totals['Discontinued']} discontinued · ${AGG.status_totals['To Be Advised']} TBA`;
+  setBar('kpiActiveBar', activePct, '#12864B');
+  setTag('kpiActiveTrend', `${activePct.toFixed(0)}% active`, 'tag-ok');
+}
+
+// ============ INITIALIZE ============
+function init(){
+  fillPeriod();
+  updateKpis();
+  buildSparklines();
+  buildCharts();
+  buildLstm();
+  renderTable();
+  renderStatusSummary();
+  renderAlerts();
+  renderReorders('all');
+  initFbtCategoryFilters();
+  renderFbt();
+  renderCustomers('all');
+
+  window.addEventListener('resize', () => {
+    Plotly.Plots.resize('progress_chart');
+    Plotly.Plots.resize('lstm_chart');
+    Plotly.Plots.resize('lstm_backtest');
+  });
+}
+
+init();
+</script>
+</body>
+</html>

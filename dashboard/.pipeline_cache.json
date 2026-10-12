@@ -1,0 +1,19 @@
+{
+ "files": {
+  "sales": "a386f0ffd6357534173f81f3002c3a9ad1dfe4d6d36985a04786fd81b60daec8",
+  "item": "54765706451cfa1c7fff0c7e6a335d66c4dd9cf43f3f7a76c2cdb79843e97f56",
+  "customer": "bf1b6343989cd001bc279b28055fc6e69158ae957454e787dcc9426a33e1e1bb"
+ },
+ "built_at": "2026-10-07 14:02",
+ "summary": {
+  "path": "p:\\SOE\\dashboard.html",
+  "order_lines": 264751,
+  "skus": 5693,
+  "customers": 2159,
+  "reorders": 12531,
+  "pairs": 300,
+  "mismatches": 144,
+  "reused": null,
+  "elapsed": 159
+ }
+}
